@@ -16,8 +16,8 @@ app.use(cors());
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
-}).then(() => console.log("MongoDB connected"))
-  .catch(err => console.log(err));
+ }).then(() => console.log("MongoDB connected"))
+   .catch(err => console.log(err));
 
 // User Schema
 const UserSchema = new mongoose.Schema({
@@ -34,6 +34,57 @@ const UserSchema = new mongoose.Schema({
 
 const User = mongoose.model("User", UserSchema);
 
+
+const foodSchema = new mongoose.Schema({
+    Food_items: String,
+    Breakfast: Number,
+    Lunch: Number,
+    Dinner: Number,
+    Calories: Number,
+    Fats: Number,
+    Proteins: Number,
+    Carbohydrates: Number,
+  } ,{ collection: "foods" });
+
+
+  const Food = mongoose.model("Food", foodSchema);
+
+  app.get("/api/macronutrients/:userId", async (req, res) => {
+    try {
+      const userId = req.params.userId;
+    //   console.log(`Fetching macronutrients for user: ${userId}`);
+  
+      const user = await User.findById(userId);
+      if (!user) {
+        // console.log("User not found");
+        return res.status(404).json({ message: "User not found" });
+      }
+  
+      const recommendedFoods = await Food.find({
+        $or: [{ Breakfast: 1 }, { Lunch: 1 }, { Dinner: 1 }]
+      });
+  
+    //   console.log("Recommended foods found:", recommendedFoods.length);
+  
+      let totalFats = 0, totalProteins = 0, totalCarbohydrates = 0;
+  
+      recommendedFoods.forEach((food) => {
+        totalFats += food.Fats || 0;
+        totalProteins += food.Proteins || 0;
+        totalCarbohydrates += food.Carbohydrates || 0;
+      });
+  
+    //   console.log("Total Macronutrients:", { Fats: totalFats, Proteins: totalProteins, Carbohydrates: totalCarbohydrates });
+  
+      res.json({ Fats: totalFats, Proteins: totalProteins, Carbohydrates: totalCarbohydrates });
+    } catch (error) {
+      console.error("Error fetching macronutrient data:", error);
+      res.status(500).json({ message: "Error fetching macronutrient data" });
+    }
+  });
+  
+  
+  
 // Register Route
 app.post("/api/register", async (req, res) => {
   try {
@@ -103,7 +154,7 @@ const authMiddleware = (req, res, next) => {
     try {
       const user = await User.findById(req.user.userId);
       if (!user) return res.status(404).json({ error: "User not found" });
-        console.log(user.age)
+        // console.log(user.age)
       // Send user details to ML model for recommendations
       const response = await axios.post(`http://127.0.0.1:5001/api/recommend`, {
         age: user.age,
@@ -114,7 +165,7 @@ const authMiddleware = (req, res, next) => {
         activity_level: user.activity_level,
         goal: user.goal
       });
-      console.log("foos"+response.data["Recommended Foods"])
+    //   console.log("foos"+response.data["Recommended Foods"])
       res.json({
         BFP: response.data["BFP"],
         BMI: response.data["BMI"],
@@ -126,7 +177,7 @@ const authMiddleware = (req, res, next) => {
         foods: response.data["Recommended Foods"]
       });
     } catch (error) {
-        console.log("cant fetching")
+        // console.log("cant fetching")
       res.status(500).json({ error: "Error fetching recommendations from ML model" });
     }
   });
@@ -142,7 +193,7 @@ const authMiddleware = (req, res, next) => {
 
   app.post("/api/logMeal", async (req, res) => {
     try {
-      console.log("Received Log Meal Request:", req.body); // ✅ Debugging log
+    //   console.log("Received Log Meal Request:", req.body); // ✅ Debugging log
   
       const { userId, food, calories } = req.body;
       const user = await User.findById(userId);
@@ -165,7 +216,7 @@ const authMiddleware = (req, res, next) => {
       const user = await User.findById(req.params.userId);
       if (!user) return res.status(404).json({ error: "User not found" });
   
-      console.log("Logged Meals from DB:", user.loggedMeals); // ✅ Debugging log
+    //   console.log("Logged Meals from DB:", user.loggedMeals); // ✅ Debugging log
   
       // ✅ Ensure loggedMeals is an array
       const loggedMeals = Array.isArray(user.loggedMeals) ? user.loggedMeals : [];

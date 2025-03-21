@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
+import MacronutrientChart from "../components/MacronutrientChart"; 
 
 const Dashboard = () => {
   const [userData, setUserData] = useState(null);
@@ -47,7 +48,7 @@ const [remainingCalories, setRemainingCalories] = useState(null);
     })
       .then(res => res.json())
       .then(data => {
-        console.log(data.foods.Breakfast)
+        // console.log(data.foods.Breakfast)
         if (data.foods) {
           setFoods(data.foods);
         }
@@ -78,13 +79,13 @@ const [remainingCalories, setRemainingCalories] = useState(null);
     })
       .then(res => res.json())
       .then(data => {
-        console.log("Fetched Logged Meals (Frontend):", data); // ✅ Debugging log
-  
+        // console.log("Fetched Logged Meals (Frontend):", data); // ✅ Debugging log
+        
         setLoggedMeals(Array.isArray(data.loggedMeals) ? data.loggedMeals : []); // ✅ Ensure it's an array
         setTotalCaloriesConsumed(data.totalCaloriesConsumed || 0);
         setRemainingCalories((DailyCalories || 0) - (data.totalCaloriesConsumed || 0));
       })
-      .catch(err => console.log(err));
+      // .catch(err => console.log(err));
   }, [userData, DailyCalories]);
   
   
@@ -105,10 +106,11 @@ const logMeal = (food, calories) => {
     .then(data => {
       setLoggedMeals(data.loggedMeals); // ✅ Update logged meals instantly
       const newTotalCalories = data.loggedMeals.reduce((sum, meal) => sum + (meal.calories || 0), 0);
+      if (newTotalCalories>DailyCalories){alert("Congratulation You Cmpleted Your today's Calory GOAL...")}
       setTotalCaloriesConsumed(newTotalCalories); // ✅ Update total calories
       setRemainingCalories((DailyCalories || 0) - newTotalCalories); // ✅ Update remaining calories
     })
-    .catch(err => console.log(err));
+    // .catch(err => console.log(err));
 };
 
 
@@ -125,10 +127,11 @@ const removeMeal = (food) => {
     .then(data => {
       setLoggedMeals(data.loggedMeals); // ✅ Update logged meals immediately
       const newTotalCalories = data.loggedMeals.reduce((sum, meal) => sum + (meal.calories || 0), 0);
+      
       setTotalCaloriesConsumed(newTotalCalories); // ✅ Update total calories
       setRemainingCalories((DailyCalories || 0) - newTotalCalories); // ✅ Update remaining calories
     })
-    .catch(err => console.log(err));
+    // .catch(err => console.log(err));
 };
   
 
@@ -214,7 +217,7 @@ const removeMeal = (food) => {
   )}
 </ul>
 
-
+{userData && <MacronutrientChart userId={userData._id} />}
 
 
 
