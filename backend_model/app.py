@@ -83,9 +83,10 @@ def recommend_food(goal, daily_calories):
         filtered_df = filtered_df.sort_values(by=["Proteins", "Fibre", "Carbohydrates"], ascending=[False, False, True])
 
     # Distribute foods into meal categories
-    breakfast = filtered_df[filtered_df["Breakfast"] == 1]["Food_items"].tolist()[:5]
-    lunch = filtered_df[filtered_df["Lunch"] == 1]["Food_items"].tolist()[:5]
-    dinner = filtered_df[filtered_df["Dinner"] == 1]["Food_items"].tolist()[:5]
+    breakfast = filtered_df[filtered_df["Breakfast"] == 1][["Food_items", "Calories"]].head(5).to_dict(orient="records")
+    lunch = filtered_df[filtered_df["Lunch"] == 1][["Food_items", "Calories"]].head(5).to_dict(orient="records")
+    dinner = filtered_df[filtered_df["Dinner"] == 1][["Food_items", "Calories"]].head(5).to_dict(orient="records")
+
 
     return {"Breakfast": breakfast, "Lunch": lunch, "Dinner": dinner}
 

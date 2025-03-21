@@ -2,8 +2,10 @@ const express = require("express");
 const mongoose = require("mongoose");
 const bcrypt = require("bcryptjs");
 const jwt = require("jsonwebtoken");
-const cors = require("cors");
+const cors=require('cors');
+const cron = require("node-cron");
 require("dotenv").config();
+
 const axios = require("axios");
 const app = express();
 app.use(express.json());
@@ -19,15 +21,16 @@ mongoose.connect(process.env.MONGO_URI, {
 
 // User Schema
 const UserSchema = new mongoose.Schema({
-  name: String,
-  email: { type: String, unique: true },
-  password: String,
-  age: Number,
-  height: Number,
-  weight: Number,
-  activity_level: String,
-  goal: String
-});
+    name: String,
+    email: { type: String, unique: true },
+    password: String,
+    age: Number,
+    height: Number,
+    weight: Number,
+    activity_level: String,
+    goal: String,
+    loggedMeals: [{ food: String, calories: Number, date: { type: Date, default: Date.now } }]
+  });
 
 const User = mongoose.model("User", UserSchema);
 
@@ -111,7 +114,7 @@ const authMiddleware = (req, res, next) => {
         activity_level: user.activity_level,
         goal: user.goal
       });
-    //   console.log("foos"+["Breakfast"])
+      console.log("foos"+response.data["Recommended Foods"])
       res.json({
         BFP: response.data["BFP"],
         BMI: response.data["BMI"],
@@ -127,6 +130,102 @@ const authMiddleware = (req, res, next) => {
       res.status(500).json({ error: "Error fetching recommendations from ML model" });
     }
   });
+
+
+
+
+
+
+
+
+
+
+  app.post("/api/logMeal", async (req, res) => {
+    try {
+      console.log("Received Log Meal Request:", req.body); // ✅ Debugging log
+  
+      const { userId, food, calories } = req.body;
+      const user = await User.findById(userId);
+      if (!user) return res.status(404).json({ error: "User not found" });
+  
+      user.loggedMeals.push({ food, calories, date: new Date() });
+      await user.save();
+  
+      res.json({ message: "Meal logged successfully", loggedMeals: user.loggedMeals });
+    } catch (error) {
+      console.error("Error logging meal:", error);
+      res.status(500).json({ error: "Error logging meal" });
+    }
+  });
+  
+  
+
+  app.get("/api/loggedMeals/:userId", async (req, res) => {
+    try {
+      const user = await User.findById(req.params.userId);
+      if (!user) return res.status(404).json({ error: "User not found" });
+  
+      console.log("Logged Meals from DB:", user.loggedMeals); // ✅ Debugging log
+  
+      // ✅ Ensure loggedMeals is an array
+      const loggedMeals = Array.isArray(user.loggedMeals) ? user.loggedMeals : [];
+  
+      // ✅ Calculate total calories
+      const totalCaloriesConsumed = loggedMeals.reduce((sum, meal) => sum + (meal.calories || 0), 0);
+  
+      res.json({ 
+        loggedMeals, 
+        totalCaloriesConsumed // ✅ Send total calories
+      });
+    } catch (error) {
+      console.error("Error fetching logged meals:", error);
+      res.status(500).json({ error: "Error fetching logged meals" });
+    }
+  });
+  
+  
+  
+  
+  
+
+
+
+
+
+
+  app.delete("/api/removeMeal", async (req, res) => {
+    try {
+      const { userId, food } = req.body;
+      const user = await User.findById(userId);
+      if (!user) return res.status(404).json({ error: "User not found" });
+  
+      user.loggedMeals = user.loggedMeals.filter(meal => meal.food !== food);
+      await user.save();
+  
+      res.json({ message: "Meal removed successfully", loggedMeals: user.loggedMeals });
+    } catch (error) {
+      res.status(500).json({ error: "Error removing meal" });
+    }
+  });
+  
+
+  cron.schedule("0 0 * * *", async () => {
+    await User.updateMany({}, { $set: { loggedMeals: [] } });
+  });
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 // Start Server
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
