@@ -16,7 +16,7 @@ const [BFP,setBFP]=useState(null)
 const [loggedMeals, setLoggedMeals] = useState([]);
 const [totalCaloriesConsumed, setTotalCaloriesConsumed] = useState(0);
 const [remainingCalories, setRemainingCalories] = useState(null);
-
+const [selectedDate, setSelectedDate] = useState(new Date().toISOString().split("T")[0]);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -89,7 +89,14 @@ const [remainingCalories, setRemainingCalories] = useState(null);
   }, [userData, DailyCalories]);
   
   
+  useEffect(() => {
+    if (!userData?._id) return;
   
+    fetch(`http://localhost:5001/api/loggedMeals/${userData._id}/${selectedDate}`)
+      .then(res => res.json())
+      .then(data => setLoggedMeals(data.loggedMeals))
+      .catch(err => console.log(err));
+  }, [userData, selectedDate]);
  // ✅ Runs when userData or DailyCalories updates
 // ✅ Runs only when `userData` is updated
   
@@ -216,7 +223,15 @@ const removeMeal = (food) => {
     <p>No meals logged yet.</p>
   )}
 </ul>
-
+<h3>Meal Log by Date</h3>
+    <input type="date" value={selectedDate} onChange={(e) => setSelectedDate(e.target.value)} />
+    <ul>
+      {loggedMeals.map((meal, index) => (
+       <li key={index}>
+       {meal.food} - {meal.calories} cal ({meal.date.split("T")[0]}) {/* ✅ Removes time part */}
+     </li>
+      ))}
+    </ul>
 {userData && <MacronutrientChart userId={userData._id} />}
 
 

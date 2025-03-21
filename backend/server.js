@@ -193,22 +193,45 @@ const authMiddleware = (req, res, next) => {
 
   app.post("/api/logMeal", async (req, res) => {
     try {
-    //   console.log("Received Log Meal Request:", req.body); // ✅ Debugging log
-  
       const { userId, food, calories } = req.body;
+      const today = new Date().toISOString().split("T")[0]; // Store only YYYY-MM-DD
+  
       const user = await User.findById(userId);
       if (!user) return res.status(404).json({ error: "User not found" });
   
-      user.loggedMeals.push({ food, calories, date: new Date() });
+      user.loggedMeals.push({ food, calories, date: today }); // ✅ Store only date (not time)
       await user.save();
   
       res.json({ message: "Meal logged successfully", loggedMeals: user.loggedMeals });
     } catch (error) {
-      console.error("Error logging meal:", error);
       res.status(500).json({ error: "Error logging meal" });
     }
   });
   
+  
+  
+  app.get("/api/loggedMeals/:userId/:date", async (req, res) => {
+    try {
+      const { userId, date } = req.params;
+      const user = await User.findById(userId);
+  
+      if (!user) return res.status(404).json({ message: "User not found" });
+  
+      // Convert the stored date and requested date to YYYY-MM-DD format
+      const selectedDate = new Date(date).toISOString().split("T")[0];
+  
+      const mealsForDate = user.loggedMeals.filter(meal => {
+        return new Date(meal.date).toISOString().split("T")[0] === selectedDate;
+      });
+  
+    //   console.log(`Meals on ${selectedDate}:`, mealsForDate);
+  
+      res.json({ loggedMeals: mealsForDate });
+    } catch (error) {
+      console.error("Error fetching meals:", error);
+      res.status(500).json({ message: "Error fetching meals" });
+    }
+  });
   
 
   app.get("/api/loggedMeals/:userId", async (req, res) => {
