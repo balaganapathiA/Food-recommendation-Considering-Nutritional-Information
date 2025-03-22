@@ -1,0 +1,233 @@
+import pandas as pd
+import random
+
+# Possible user attributes
+genders = ["Male", "Female"]
+activity_levels = ["Sedentary", "Lightly Active", "Moderately Active", "Very Active"]
+diets = ["Vegetarian", "Non-Vegetarian"]
+health_goals = ["Maintain", "Weight Loss", "Muscle Gain"]
+
+# South Indian meal database (Veg & Non-Veg)
+south_indian_meals = {
+    "Veg_Breakfast": [
+         ("Idli & Sambar + Banana", 280, 50, 10, 2),
+        ("Dosa & Coconut Chutney + Orange", 320, 55, 8, 5),
+        ("Millet Pongal & Peanut Chutney + Guava", 330, 58, 12, 6),
+        ("Ragi Idli & Avocado Chutney + Papaya", 310, 52, 11, 5),
+        ("Upma & Sprouts Salad + Pomegranate", 295, 48, 10, 4),
+        ("Vegetable Semiya & Peanut Chutney + Mango", 300, 54, 8, 5),
+        ("Wheat Rava Upma & Boiled Almonds + Muskmelon", 330, 55, 14, 7)
+		 ("Kambu (Bajra) Dosa & Mint Chutney + Pineapple", 320, 55, 9, 5),
+    ("Rava Idli & Coriander Chutney + Fig", 330, 58, 10, 6),
+    ("Oats Pongal & Vegetable Stir Fry + Papaya", 310, 50, 12, 5),
+    ("Methi Paratha & Curd + Banana", 350, 60, 11, 8),
+    ("Barnyard Millet Upma & Coconut Chutney + Dates", 300, 54, 8, 5),
+    ("Pesarattu (Green Gram Dosa) & Tomato Chutney + Guava", 290, 50, 11, 4),
+    ("Aval (Flattened Rice) Upma & Boiled Peanuts + Watermelon", 310, 55, 9, 5),
+    ("Ragi Porridge & Almonds + Orange", 280, 50, 10, 4),
+    ("Kanchipuram Idli & Garlic Chutney + Pomegranate", 340, 55, 10, 7),
+    ("Red Rice Idiyappam & Coconut Milk + Apple", 320, 54, 9, 5)
+	("Sprouted Moong Dal Dosa & Tomato Chutney + Guava", 330, 55, 14, 6),
+    ("Barnyard Millet Pongal & Peanut Chutney + Pomegranate", 310, 54, 13, 5),
+    ("Rava Upma & Mixed Veg Salad + Orange", 320, 56, 12, 6),
+    ("Keerai Adai & Coconut Chutney + Watermelon", 340, 57, 14, 7),
+    ("Thinai (Foxtail Millet) Idli & Tomato Chutney + Dates", 330, 55, 12, 6),
+    ("Vegetable Ragi Idiyappam & Coconut Milk + Banana", 320, 52, 10, 5),
+    ("Soya Dosa & Mint Chutney + Papaya", 350, 60, 15, 8),
+    ("Pesarattu & Ginger Chutney + Muskmelon", 300, 50, 12, 5),
+    ("Ragi Porridge & Almonds + Chikku", 290, 48, 10, 4),
+    ("Multi-Grain Adai & Coconut Chutney + Mango", 310, 53, 13, 5),
+    ("Beetroot Dosa & Peanut Chutney + Pineapple", 340, 56, 14, 7),
+    ("Red Rice Idli & Green Chutney + Fig", 320, 54, 11, 6),
+    ("Millet Pongal & Tomato Chutney + Kiwi", 310, 50, 12, 5),
+    ("Vermicelli Upma & Sprout Salad + Papaya", 295, 47, 11, 4),
+    ("Quinoa Uttapam & Mint Chutney + Apple", 320, 55, 13, 6),
+    ("Methi Thepla & Yogurt + Guava", 340, 58, 14, 7),
+    ("Pumpkin Paratha & Coriander Chutney + Pomegranate", 330, 57, 12, 6),
+    ("Flaxseed Adai & Tomato Chutney + Banana", 310, 52, 11, 5),
+    ("Jackfruit Idli & Peanut Chutney + Muskmelon", 320, 53, 12, 6),
+    ("Carrot & Beetroot Chapati + Yogurt", 340, 58, 15, 7)
+    ],
+    "NonVeg_Breakfast": [
+        ("Egg Dosa & Mint Chutney + Apple", 360, 50, 15, 7),
+        ("Appam & chicken Curry + Kiwi", 340, 55, 12, 6),
+        ("Kuzhi Paniyaram & Green Chutney + Whole Eggs", 320, 52, 9, 5),
+        ("Egg Bhurji & Millet Roti + Chikku", 340, 53, 14, 7)
+		  ("Chicken Keema Dosa & Mint Chutney + Kiwi", 360, 50, 18, 8),
+    ("Egg Paratha & Tomato Chutney + Mango", 370, 55, 20, 9),
+    ("Egg Appam & Coconut Stew + Muskmelon", 340, 54, 15, 7),
+    ("Fish Cutlet & Ragi Idli + Banana", 350, 53, 19, 8),
+    ("Egg Podimas (Scrambled Egg) & Whole Wheat Bread + Chikku", 330, 52, 18, 7)
+	("Chicken Stuffed Dosa & Mint Chutney + Mango", 370, 55, 20, 9),
+    ("Egg Keema Paratha & Tomato Chutney + Orange", 380, 58, 22, 10),
+    ("Fish Tawa Fry & Red Rice Idiyappam + Banana", 360, 53, 21, 8),
+    ("Egg Podimas & Whole Wheat Bread + Apple", 340, 50, 18, 7),
+    ("Prawn Masala & Ragi Idli + Guava", 350, 55, 22, 9),
+    ("Chicken Omelette & Millet Roti + Pineapple", 360, 54, 20, 9),
+    ("Mutton Kheema Dosa & Onion Chutney + Dates", 380, 56, 23, 10),
+    ("Egg Curry & Chapati + Papaya", 350, 50, 18, 7),
+    ("Spicy Tuna Cutlet & Lemon Rice + Kiwi", 390, 60, 25, 11),
+    ("Egg Bhurji & Bajra Roti + Almonds", 370, 55, 22, 9)
+    ],
+    "Veg_Lunch": [
+        ("Sambar Rice & Curd + Cucumber Salad", 550, 85, 18, 12),
+        ("Vegetable Biryani & Raita + Guava", 580, 88, 20, 14),
+        ("Lemon Rice & Papad + Sprout Salad", 500, 80, 15, 10),
+        ("Ragi Mudde & Keerai Kootu + Orange", 520, 82, 22, 11),
+        ("Paneer Butter Masala & Jeera Rice + Curd", 600, 86, 25, 15),
+        ("Vegetable Kurma & Coconut Rice + Boiled Sweet Potato", 550, 88, 18, 13),
+        ("Rajma Curry & Brown Rice + Mango", 540, 82, 20, 12),
+		 ("Kootu Curry & Red Rice + Pomegranate", 530, 82, 18, 10),
+    ("Mixed Veg Kurma & Bajra Roti + Cucumber Raita", 520, 85, 17, 11),
+    ("Chickpea Sundal & Lemon Rice + Sprouted Moong Salad", 510, 80, 16, 9),
+    ("Vazhaipoo (Banana Flower) Usili & Jeera Rice + Buttermilk", 540, 88, 20, 12),
+    ("Pumpkin Curry & Steamed Rice + Guava", 530, 85, 19, 11),
+    ("Peerkangai (Ridge Gourd) Kootu & Red Rice + Banana", 520, 82, 18, 10),
+    ("Beans Poriyal & Chapati + Mango Raita", 500, 78, 17, 10),
+    ("Carrot Kurma & Whole Wheat Roti + Almonds", 510, 80, 18, 9),
+    ("Keerai Masiyal & Jowar Roti + Apple", 520, 84, 19, 11),
+    ("Rajma Sundal & Coconut Rice + Muskmelon", 540, 87, 20, 12)
+	  ("Brinjal Kootu & Red Rice + Curd", 540, 85, 20, 11),
+    ("Spinach Dal & Jowar Roti + Mango", 520, 80, 18, 10),
+    ("Bottlegourd Curry & Brown Rice + Guava", 510, 78, 17, 9),
+    ("Pumpkin Kootu & Chapati + Banana", 500, 75, 16, 8),
+    ("Cabbage Thoran & Rice + Pineapple", 530, 85, 18, 10),
+    ("Green Peas Masala & Jeera Rice + Cucumber Salad", 520, 82, 17, 10),
+    ("Rajma Sundal & Coconut Rice + Carrot Raita", 540, 87, 20, 12),
+    ("Channa Dal Curry & Bajra Roti + Pomegranate", 530, 83, 18, 11),
+    ("Mixed Sprouts Khichdi & Yogurt + Apple", 520, 80, 19, 10),
+    ("Drumstick Sambar & Ragi Mudde + Muskmelon", 550, 90, 22, 12),
+    ("Jackfruit Curry & Quinoa + Buttermilk", 530, 85, 19, 11),
+    ("Paneer Bhurji & Whole Wheat Roti + Mango", 540, 88, 21, 12),
+    ("Beetroot Poriyal & Millet Rice + Curd", 510, 78, 17, 9),
+    ("Sprouted Moong Dal Salad & Lemon Rice + Guava", 500, 75, 16, 8),
+    ("Palak Paneer & Jeera Rice + Papaya", 540, 85, 21, 11),
+    ("Coconut Dal & Ragi Roti + Dates", 530, 82, 18, 10),
+    ("Zucchini Sabzi & Bajra Roti + Almonds", 520, 80, 17, 10),
+    ("Mixed Vegetable Sagu & Chapati + Kiwi", 500, 75, 16, 8),
+    ("Tinda Masala & Red Rice + Pineapple", 530, 85, 18, 10),
+    ("Sweet Corn Masala & Brown Rice + Cucumber Raita", 520, 80, 17, 9)
+    ],
+    "NonVeg_Lunch": [
+          ("Grilled Fish & Steamed Rice + Tomato Salad", 620, 84, 28, 15),
+        ("Chicken Chettinad & Chapati + Spinach Salad", 680, 90, 35, 18),
+        ("Mutton Curry & Red Rice + Beetroot Salad", 720, 95, 38, 20),
+        ("Egg Masala & Ghee Rice + Carrot Raita", 610, 90, 26, 16),
+		 ("Prawn Masala & Brown Rice + Carrot Raita", 640, 88, 28, 16),
+    ("Fish Curry & Red Rice + Beetroot Salad", 620, 85, 30, 15),
+    ("Chicken Sukka & Chapati + Tomato Soup", 680, 92, 34, 18),
+    ("Mutton Kurma & Ghee Rice + Spinach Stir Fry", 720, 96, 40, 22),
+    ("Egg Biryani & Onion Raita + Curd", 610, 90, 32, 16)
+	 ("Mutton Rogan Josh & Jeera Rice + Spinach Stir Fry", 750, 98, 42, 24),
+    ("Fish Curry & Ragi Mudde + Cabbage Poriyal", 630, 88, 30, 16),
+    ("Prawn Sukka & Coconut Rice + Tomato Soup", 640, 92, 34, 18),
+    ("Grilled Chicken & Bajra Roti + Curd", 670, 95, 38, 20),
+    ("Egg Masala & Ghee Rice + Carrot Raita", 620, 92, 28, 17),
+    ("Tandoori Chicken & Whole Wheat Roti + Cucumber Salad", 700, 100, 40, 22),
+    ("Chicken Curry & Steamed Rice + Guava", 650, 96, 35, 18),
+    ("Mutton Keema & Ragi Chapati + Buttermilk", 730, 98, 41, 22),
+    ("Fish Fry & Millet Rice + Pomegranate", 620, 90, 30, 16),
+    ("Egg Pepper Fry & Lemon Rice + Spinach Salad", 640, 92, 34, 18)
+    ],
+    "Veg_Dinner": [
+     ("Chapati & Dal Fry + Cucumber Raita", 430, 72, 18, 9),
+        ("Vegetable Uttapam & Mint Chutney + Banana", 400, 68, 15, 8),
+        ("Curd Rice & Pomegranate + Almonds", 450, 74, 17, 10),
+        ("Tomato Rasam & Quinoa + Buttermilk", 470, 70, 20, 8),
+        ("Adai & Avial + Mixed Fruit Salad", 490, 75, 22, 10),
+        ("Ragi Roti & Keerai Masiyal + Dates", 460, 70, 18, 9)
+		 ("Masoor Dal Khichdi & Curd + Dates", 450, 74, 19, 9),
+    ("Pumpkin Rasam & Quinoa + Pomegranate", 470, 70, 20, 8),
+    ("Mixed Sprouts Stir Fry & Jowar Roti + Guava", 460, 72, 21, 10),
+    ("Cabbage Stir Fry & Bajra Roti + Orange", 440, 70, 19, 8),
+    ("Tofu Bhurji & Whole Wheat Roti + Banana", 480, 76, 23, 11),
+    ("Methi Dal & Jeera Rice + Buttermilk", 450, 74, 18, 9),
+    ("Brinjal Gothsu & Millets + Apple", 470, 70, 20, 8),
+    ("Spinach & Lentil Soup + Whole Wheat Bread", 460, 75, 22, 9),
+    ("Beetroot Poriyal & Chapati + Almonds", 480, 78, 19, 10),
+    ("Rajma Masala & Bajra Roti + Mango", 490, 80, 21, 11)
+	("Vegetable Kurma & Bajra Roti + Buttermilk", 460, 75, 22, 10),
+    ("Brinjal Rasavangi & Red Rice + Cucumber Salad", 480, 78, 21, 11),
+    ("Vazhaipoo (Banana Flower) Usili & Jeera Rice + Mango", 470, 76, 20, 10),
+    ("Tomato Kurma & Whole Wheat Roti + Carrot Raita", 460, 75, 18, 9),
+    ("Keerai Masiyal & Ragi Roti + Pineapple", 450, 74, 19, 8),
+    ("Channa Dal Curry & Jowar Roti + Pomegranate", 470, 78, 20, 10),
+    ("Mixed Sprouts Poriyal & Coconut Rice + Papaya", 480, 79, 21, 11),
+    ("Palak Paneer & Chapati + Guava", 490, 80, 22, 12),
+    ("Rajma Masala & Bajra Roti + Curd", 500, 82, 23, 13),
+    ("Zucchini Thoran & Brown Rice + Dates", 460, 74, 19, 8),
+    ("Kothu Parotta (Veg) & Coconut Chutney + Almonds", 520, 85, 24, 15),
+    ("Sweet Corn Kurma & Jeera Rice + Kiwi", 480, 78, 21, 11),
+    ("Carrot & Capsicum Stir Fry & Millet Roti + Watermelon", 450, 74, 18, 9),
+    ("Moong Dal Kootu & Red Rice + Muskmelon", 470, 76, 20, 10),
+    ("Green Gram Sundal & Chapati + Banana", 460, 75, 19, 9)
+    ],
+    "NonVeg_Dinner": [
+          ("Egg Curry & Rice + Tomato Soup", 520, 80, 25, 12),
+        ("Grilled Fish & Millet Roti + Sprout Salad", 550, 76, 30, 14),
+        ("Kothu Parotta & Mutton Gravy + Cabbage Poriyal", 710, 90, 38, 22),
+        ("Paneer Bhurji & Whole Wheat Roti + Fig", 520, 85, 25, 12)
+		
+		("Chicken Stew & Appam + Cabbage Poriyal", 610, 85, 35, 16),
+    ("Fish Fry & Red Rice + Sprouted Moong Salad", 620, 82, 38, 15),
+    ("Egg Pepper Masala & Chapati + Buttermilk", 540, 75, 28, 12),
+    ("Mutton Soup & Millet Roti + Spinach Stir Fry", 650, 90, 40, 18),
+    ("Chicken Curry & Brown Rice + Guava", 580, 85, 36, 14)
+	 ("Fish Curry & Brown Rice + Cabbage Poriyal", 610, 88, 32, 16),
+    ("Chicken Sukka & Millet Roti + Buttermilk", 630, 90, 35, 18),
+    ("Mutton Pepper Fry & Chapati + Tomato Soup", 710, 98, 40, 22),
+    ("Egg Podimas & Jeera Rice + Spinach Salad", 550, 80, 28, 14),
+    ("Prawn Masala & Red Rice + Guava", 640, 92, 34, 18),
+    ("Grilled Chicken & Bajra Roti + Curd", 670, 95, 38, 20),
+    ("Egg Omelette & Steamed Rice + Beetroot Salad", 600, 90, 30, 16),
+    ("Tandoori Fish & Whole Wheat Roti + Pomegranate", 620, 88, 32, 16),
+    ("Mutton Keema Curry & Parotta + Buttermilk", 750, 100, 42, 24),
+    ("Chicken Curry & Lemon Rice + Spinach Stir Fry", 650, 96, 35, 18),
+    ("Egg Pepper Masala & Millet Roti + Papaya", 590, 85, 32, 15),
+    ("Kozhi Varuval (Chicken Fry) & Ragi Roti + Cucumber Salad", 670, 95, 38, 20),
+    ("Crab Masala & Red Rice + Carrot Raita", 710, 98, 40, 22),
+    ("Grilled Fish & Jeera Rice + Curd", 630, 92, 34, 18),
+    ("Egg Bhurji & Chapati + Watermelon", 570, 88, 30, 16)
+    ]
+}
+
+# Generate 1000+ unique data entries
+data = []
+for _ in range(1000):
+    height = random.randint(150, 190)  # Height in cm
+    weight = random.randint(50, 100)   # Weight in kg
+    age = random.randint(18, 60)       # Age in years
+    gender = random.choice(genders)
+    activity = random.choice(activity_levels)
+    diet = random.choice(diets)  # Vegetarian or Non-Vegetarian
+    health_goal = random.choice(health_goals)
+    
+    # Select meals based on diet
+    if diet == "Vegetarian":
+        breakfast = random.choice(south_indian_meals["Veg_Breakfast"])
+        lunch = random.choice(south_indian_meals["Veg_Lunch"])
+        dinner = random.choice(south_indian_meals["Veg_Dinner"])
+    else:  # Non-Vegetarians can have both veg & non-veg
+        breakfast = random.choice(south_indian_meals["Veg_Breakfast"] + south_indian_meals["NonVeg_Breakfast"])
+        lunch = random.choice(south_indian_meals["Veg_Lunch"] + south_indian_meals["NonVeg_Lunch"])
+        dinner = random.choice(south_indian_meals["Veg_Dinner"] + south_indian_meals["NonVeg_Dinner"])
+    
+    # Ensure uniqueness
+    if (height, weight, age, gender, activity, diet, health_goal, breakfast[0], lunch[0], dinner[0]) not in data:
+        data.append((height, weight, age, gender, activity, diet, health_goal, 
+                     breakfast[0], breakfast[1], breakfast[2], breakfast[3], breakfast[4],
+                     lunch[0], lunch[1], lunch[2], lunch[3], lunch[4],
+                     dinner[0], dinner[1], dinner[2], dinner[3], dinner[4]))
+
+# Create DataFrame
+columns = ["Height", "Weight", "Age", "Gender", "Activity", "Diet", "Health Goal",
+           "Breakfast", "B_Calories", "B_Carbs", "B_Protein", "B_Fats",
+           "Lunch", "L_Calories", "L_Carbs", "L_Protein", "L_Fats",
+           "Dinner", "D_Calories", "D_Carbs", "D_Protein", "D_Fats"]
+
+df = pd.DataFrame(data, columns=columns)
+
+# Save to CSV
+df.to_csv("Food_recommendation_dataset.csv", index=False)
+
+print("✅ 1000+ row dataset created successfully!")
