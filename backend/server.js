@@ -67,9 +67,10 @@ const foodSchema = new mongoose.Schema({
   const postSchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     content: String,
+    imageUrl: String, // Add this field to store the image URL
     createdAt: { type: Date, default: Date.now },
     likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
-    replies: [replySchema], // Store replies for each post
+    replies: [replySchema],
   });
   const Post = mongoose.model("Post", postSchema);
 
@@ -134,7 +135,7 @@ app.post("/api/register", async (req, res) => {
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = new User({ name, email, password: hashedPassword, age, height, weight,waist, activity_level, goal });
     await newUser.save();
-    console.log("reg:"+newUser.waist)
+    // console.log("reg:"+newUser.waist)
     res.status(201).json({ message: "User registered successfully" });
   } catch (error) {
     res.status(500).json({ error: "Error registering user" });
@@ -193,13 +194,13 @@ const authMiddleware = (req, res, next) => {
     try {
       const user = await User.findById(req.user.userId);
       if (!user) return res.status(404).json({ error: "User not found" });
-      console.log("user"+user.waist)
+      // console.log("user"+user.waist)
       // Send user details to ML model for recommendations
       const response = await axios.post(`http://127.0.0.1:5001/api/recommend`, {
         age: user.age,
         height: user.height,
         weight: user.weight,
-        waist: user.waist,  // Adjust if necessary
+        waist: user.waist || 0,  // Adjust if necessary
         gender: "male", // Adjust as per your schema
         activity_level: user.activity_level,
         goal: user.goal
@@ -384,13 +385,45 @@ app.get("/api/challenges", async (req, res) => {
 
 
 
-app.post("/api/posts", async (req, res) => {
-  const { userId, content } = req.body;
-  const post = new Post({ userId, content });
-  await post.save();
-  res.json(post);
+
+
+const multer = require("multer");
+const path = require("path");
+
+// Configure storage for uploaded files
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => {
+    cb(null, "uploads/"); // Save files in the "uploads" directory
+  },
+  filename: (req, file, cb) => {
+    cb(null, Date.now() + path.extname(file.originalname)); // Add a timestamp to the filename
+  },
 });
 
+// Initialize Multer
+const upload = multer({ storage });
+
+
+// app.post("/api/posts", async (req, res) => {
+//   const { userId, content } = req.body;
+//   const post = new Post({ userId, content });
+//   await post.save();
+//   res.json(post);
+// });
+
+app.post("/api/posts", upload.single("image"), async (req, res) => {
+  try {
+    const { userId, content } = req.body;
+    const imageUrl = req.file ? `/uploads/${req.file.filename}` : null; // Get the file path if an image was uploaded
+
+    const post = new Post({ userId, content, imageUrl });
+    await post.save();
+
+    res.json(post);
+  } catch (error) {
+    res.status(500).json({ error: "Error creating post" });
+  }
+});
 
 
 app.post("/api/posts/:postId/like", async (req, res) => {
@@ -476,6 +509,40 @@ app.get("/api/posts", async (req, res) => {
     }
   });
 
+  app.delete("/api/posts/:postId/replies/:replyId", async (req, res) => {
+    try {
+      const { postId, replyId } = req.params;
+      const { userId } = req.body; // User ID of the person trying to delete the reply
+  
+      const post = await Post.findById(postId);
+      if (!post) {
+        return res.status(404).json({ error: "Post not found" });
+      }
+  
+      // Find the reply in the post's replies array
+      const replyIndex = post.replies.findIndex(
+        (reply) => reply._id.toString() === replyId
+      );
+  
+      if (replyIndex === -1) {
+        return res.status(404).json({ error: "Reply not found" });
+      }
+  
+      // Check if the user is the owner of the reply
+      if (post.replies[replyIndex].userId.toString() !== userId) {
+        return res.status(403).json({ error: "You are not authorized to delete this reply" });
+      }
+  
+      // Remove the reply from the array
+      post.replies.splice(replyIndex, 1);
+      await post.save();
+  
+      res.json({ message: "Reply deleted successfully" });
+    } catch (error) {
+      console.error("Error deleting reply:", error);
+      res.status(500).json({ error: "Error deleting reply" });
+    }
+  });
 
 
 
@@ -504,8 +571,7 @@ app.get("/api/posts", async (req, res) => {
 
 
 
-
-
+  app.use("/uploads", express.static(path.join(__dirname, "uploads")));
   // --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 // Start Server
 const PORT = process.env.PORT || 5001;

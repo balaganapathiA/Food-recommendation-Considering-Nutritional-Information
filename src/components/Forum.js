@@ -1,4 +1,6 @@
 import React, { useState, useEffect } from "react";
+
+// import React, { useState } from "react";
 import axios from "axios";
 import {
   Card,
@@ -15,11 +17,11 @@ import { Delete as DeleteIcon, ThumbUp as ThumbUpIcon } from "@mui/icons-materia
 const Forum = ({ userId }) => {
   const [posts, setPosts] = useState([]);
   const [newPost, setNewPost] = useState("");
-  const [replyContent, setReplyContent] = useState({}); // Store reply content for each post/reply
+  const [image, setImage] = useState(null); // State for storing the image file
+  const [replyContent, setReplyContent] = useState({});
   const [snackbarOpen, setSnackbarOpen] = useState(false);
   const [snackbarMessage, setSnackbarMessage] = useState("");
 
-  // Fetch posts when the component mounts or when a new post is created
   const fetchPosts = () => {
     axios
       .get("http://localhost:5001/api/posts")
@@ -28,61 +30,65 @@ const Forum = ({ userId }) => {
   };
 
   useEffect(() => {
-    fetchPosts(); // Fetch posts when the component mounts
+    fetchPosts();
   }, []);
 
-  // Show snackbar message
   const showSnackbar = (message) => {
     setSnackbarMessage(message);
     setSnackbarOpen(true);
   };
 
-  // Close snackbar
   const handleSnackbarClose = () => {
     setSnackbarOpen(false);
   };
 
-  // Create a new post
   const createPost = () => {
-    if (!newPost.trim()) return; // Ensure the post content is not empty
+    if (!newPost.trim() && !image) return; // Ensure the post has content or an image
+
+    const formData = new FormData();
+    formData.append("userId", userId);
+    formData.append("content", newPost);
+    if (image) {
+      formData.append("image", image);
+    }
 
     axios
-      .post("http://localhost:5001/api/posts", { userId, content: newPost })
+      .post("http://localhost:5001/api/posts", formData, {
+        headers: { "Content-Type": "multipart/form-data" },
+      })
       .then(() => {
-        setNewPost(""); // Clear the input field
-        fetchPosts(); // Fetch updated posts after creating a new one
+        setNewPost("");
+        setImage(null);
+        fetchPosts();
         showSnackbar("Post created!");
       })
       .catch((error) => console.error("Error creating post", error));
   };
 
-  // Delete a post
   const deletePost = (postId) => {
     if (window.confirm("Are you sure you want to delete this post?")) {
       axios
         .delete(`http://localhost:5001/api/posts/${postId}`)
         .then(() => {
-          fetchPosts(); // Fetch updated posts after deletion
+          fetchPosts();
           showSnackbar("Post deleted!");
         })
         .catch((error) => console.error("Error deleting post", error));
     }
   };
 
-  // Like a post
   const likePost = (postId) => {
     axios
       .post(`http://localhost:5001/api/posts/${postId}/like`, { userId })
       .then(() => {
-        fetchPosts(); // Fetch updated posts after liking
+        fetchPosts();
       })
       .catch((error) => console.error("Error liking post", error));
   };
 
-  // Add a reply to a post or a reply
   const addReply = (postId, parentReplyId = null) => {
     const content = replyContent[parentReplyId || postId];
-    if (!content) return; // Ensure reply content is not empty
+    if (!content) return;
 
     axios
       .post(`http://localhost:5001/api/posts/${postId}/reply`, {
@@ -91,34 +97,46 @@ const Forum = ({ userId }) => {
         parentReplyId,
       })
       .then(() => {
-        setReplyContent({ ...replyContent, [parentReplyId || postId]: "" }); // Clear the reply input field
-        fetchPosts(); // Fetch updated posts after adding a reply
+        setReplyContent({ ...replyContent, [parentReplyId || postId]: "" });
+        fetchPosts();
         showSnackbar("Reply added!");
       })
       .catch((error) => console.error("Error adding reply", error));
   };
 
-  // Helper function to find a reply by ID recursively
   const findReplyById = (replies, replyId) => {
     for (const reply of replies) {
       if (reply._id === replyId) {
-        return reply; // Found the reply
+        return reply;
       }
-      // Search recursively in nested replies
       if (reply.replies && reply.replies.length > 0) {
         const foundReply = findReplyById(reply.replies, replyId);
         if (foundReply) {
-          return foundReply; // Return if found in nested replies
+          return foundReply;
         }
       }
     }
-    return null; // Reply not found
+    return null;
+  };
+  const deleteReply = (postId, replyId) => {
+    if (window.confirm("Are you sure you want to delete this reply?")) {
+      axios
+        .delete(`http://localhost:5001/api/posts/${postId}/replies/${replyId}`, {
+          data: { userId }, // Send the user ID in the request body
+        })
+        .then(() => {
+          fetchPosts(); // Refresh the posts to reflect the deletion
+          showSnackbar("Reply deleted!");
+        })
+        .catch((error) => {
+          console.error("Error deleting reply", error);
+          showSnackbar("Error deleting reply. Please try again.");
+        });
+    }
   };
 
-  // Render nested replies recursively
   const renderReplies = (replies, postId) => {
     return replies.map((reply) => {
-      // Find the parent reply if it exists (recursively)
       const parentReply = reply.parentReplyId ? findReplyById(replies, reply.parentReplyId) : null;
 
       return (
@@ -127,22 +145,28 @@ const Forum = ({ userId }) => {
           style={{ marginLeft: "20px", marginTop: "10px", backgroundColor: "#f5f5f5" }}
         >
           <CardContent>
-            {/* Display the reply content */}
             <Typography variant="body1">{reply.content}</Typography>
-
-            {/* Display who created the reply */}
             <Typography variant="caption" color="textSecondary">
               By: {reply.userId.name}
             </Typography>
-
-            {/* Display whom the reply is replying to */}
             {reply.parentReplyId && parentReply && (
               <Typography variant="caption" color="textSecondary" style={{ fontStyle: "italic" }}>
                 Replying to: {parentReply.userId.name}
               </Typography>
             )}
 
-            {/* Reply to this reply */}
+            {/* Delete Button (only for the user who created the reply) */}
+          {reply.userId._id === userId && (
+            <IconButton
+              color="error"
+              size="small"
+              style={{ marginLeft: "10px" }}
+              onClick={() => deleteReply(postId, reply._id)}
+            >
+              <DeleteIcon fontSize="small" />
+            </IconButton>
+          )}
+          {/* Reply Section */}
             <div style={{ marginTop: "10px" }}>
               <TextField
                 fullWidth
@@ -163,9 +187,8 @@ const Forum = ({ userId }) => {
               >
                 Reply
               </Button>
+             { /* Render Nested Replies */}
             </div>
-
-            {/* Render nested replies */}
             {renderReplies(reply.replies, postId)}
           </CardContent>
         </Card>
@@ -191,6 +214,12 @@ const Forum = ({ userId }) => {
             onChange={(e) => setNewPost(e.target.value)}
             placeholder="Write a new post..."
           />
+          <input
+            type="file"
+            accept="image/*"
+            onChange={(e) => setImage(e.target.files[0])}
+            style={{ marginTop: "10px" }}
+          />
           <Button
             variant="contained"
             color="primary"
@@ -207,6 +236,13 @@ const Forum = ({ userId }) => {
         <Card key={post._id} style={{ marginBottom: "20px" }}>
           <CardContent>
             <Typography variant="h6">{post.content}</Typography>
+            {post.imageUrl && (
+              <img
+                src={`http://localhost:5001${post.imageUrl}`}
+                alt="Post"
+                style={{ maxWidth: "100%", marginTop: "10px" }}
+              />
+            )}
             <Typography variant="caption" color="textSecondary">
               By: {post.userId.name}
             </Typography>
@@ -223,7 +259,6 @@ const Forum = ({ userId }) => {
                 {post.likes.length} Likes
               </Typography>
 
-              {/* Show delete button only for the user who created the post */}
               {post.userId._id === userId && (
                 <IconButton
                   color="error"
