@@ -113,6 +113,7 @@ def recommend():
         age, height, weight, waist, gender, activity_level, goal
     )
 
+    # print(whtr)
     # Get food recommendations
     recommended_foods = recommend_food(goal, daily_calories)
 

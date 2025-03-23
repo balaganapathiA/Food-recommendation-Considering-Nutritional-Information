@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import MacronutrientChart from "../components/MacronutrientChart";
+import UserProfile from "../components/UserProfile";
+import Challenges from "../components/Challanges";
+import Forum from "../components/Forum";
 import {
   AppBar,
   Toolbar,
@@ -54,7 +57,7 @@ const Dashboard = () => {
       .then((res) => res.json())
       .then((data) => {
         if (data.error) {
-          alert(data.error);
+          alert("Session Expired.Plz Re-login ");
           navigate("/login");
         } else {
           setUserData(data.user);
@@ -101,6 +104,7 @@ const Dashboard = () => {
   useEffect(() => {
     if (!userData?._id) return;
 
+    // console.log(userData._id)
     fetch(`http://localhost:5001/api/loggedMeals/${userData._id}/${selectedDate}`)
       .then((res) => res.json())
       .then((data) => setLoggedMeals(data.loggedMeals))
@@ -287,6 +291,8 @@ const Dashboard = () => {
             {userData && <MacronutrientChart userId={userData._id} />}
           </Grid>
         </Grid>
+
+        
       </Container>
 
       {/* Snackbar for Goal Achieved Message */}
@@ -300,6 +306,10 @@ const Dashboard = () => {
           Congratulations! You completed your today's calorie goal...🔥
         </Alert>
       </Snackbar>
+      {/* {userData && <UserProfile userId={userData._id} />}
+      {userData &&<Challenges userId={userData._id} />} */}
+      {userData && <Forum userId={userData._id} />}
+      
     </div>
   );
 };

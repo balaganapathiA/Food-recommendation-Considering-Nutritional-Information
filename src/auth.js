@@ -2,8 +2,20 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { Container, TextField, Button, Typography, Box, MenuItem } from "@mui/material";
 
+
 const Register = () => {
-  const [formData, setFormData] = useState({ name: "", email: "", password: "", age: "", height: "", weight: "", activity_level: "", goal: "" });
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    password: "",
+    age: "",
+    height: "",
+    weight: "",
+    waist: "",
+    activity_level: "sedentary", // Provide a valid initial value
+    goal: "weight_loss", // Provide a valid initial value
+  });
+
   const navigate = useNavigate();
 
   const handleChange = (e) => {
@@ -12,6 +24,7 @@ const Register = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    // console.log(formData.waist)
     const response = await fetch("http://localhost:5001/api/register", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -30,14 +43,31 @@ const Register = () => {
         <TextField label="Age" type="number" name="age" onChange={handleChange} required fullWidth />
         <TextField label="Height (cm)" type="number" name="height" onChange={handleChange} required fullWidth />
         <TextField label="Weight (kg)" type="number" name="weight" onChange={handleChange} required fullWidth />
-        <TextField select label="Activity Level" name="activity_level" onChange={handleChange} required fullWidth>
+        <TextField label="Waist (cm)" type="number" name="waist" onChange={handleChange} required fullWidth />
+        <TextField
+          select
+          label="Activity Level"
+          name="activity_level"
+          value={formData.activity_level} // Controlled value
+          onChange={handleChange}
+          required
+          fullWidth
+        >
           <MenuItem value="sedentary">Sedentary</MenuItem>
           <MenuItem value="light">Light</MenuItem>
           <MenuItem value="moderate">Moderate</MenuItem>
           <MenuItem value="active">Active</MenuItem>
           <MenuItem value="very_active">Very Active</MenuItem>
         </TextField>
-        <TextField select label="Goal" name="goal" onChange={handleChange} required fullWidth>
+        <TextField
+          select
+          label="Goal"
+          name="goal"
+          value={formData.goal} // Controlled value
+          onChange={handleChange}
+          required
+          fullWidth
+        >
           <MenuItem value="weight_loss">Weight Loss</MenuItem>
           <MenuItem value="weight_gain">Weight Gain</MenuItem>
           <MenuItem value="maintenance">Maintenance</MenuItem>
@@ -47,6 +77,7 @@ const Register = () => {
     </Container>
   );
 };
+
 const Login = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");

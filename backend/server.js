@@ -10,7 +10,7 @@ const axios = require("axios");
 const app = express();
 app.use(express.json());
 app.use(cors());
-
+app.use(cors({ origin: "http://localhost:3000" }));
 
 // Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI, {
@@ -27,6 +27,7 @@ const UserSchema = new mongoose.Schema({
     age: Number,
     height: Number,
     weight: Number,
+    waist: Number,
     activity_level: String,
     goal: String,
     loggedMeals: [{ food: String, calories: Number, date: { type: Date, default: Date.now } }]
@@ -48,7 +49,43 @@ const foodSchema = new mongoose.Schema({
 
 
   const Food = mongoose.model("Food", foodSchema);
+  // --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 
+
+
+
+
+
+
+  const replySchema = new mongoose.Schema({
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    content: String,
+    createdAt: { type: Date, default: Date.now },
+    parentReplyId: { type: mongoose.Schema.Types.ObjectId, ref: "Reply", default: null }, // Track parent reply
+  });
+  
+  const postSchema = new mongoose.Schema({
+    userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
+    content: String,
+    createdAt: { type: Date, default: Date.now },
+    likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
+    replies: [replySchema], // Store replies for each post
+  });
+  const Post = mongoose.model("Post", postSchema);
+
+
+
+
+
+
+
+
+
+
+
+
+
+  // --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
   app.get("/api/macronutrients/:userId", async (req, res) => {
     try {
       const userId = req.params.userId;
@@ -88,14 +125,16 @@ const foodSchema = new mongoose.Schema({
 // Register Route
 app.post("/api/register", async (req, res) => {
   try {
-    const { name, email, password, age, height, weight, activity_level, goal } = req.body;
+    const { name, email, password, age, height, weight,waist, activity_level, goal } = req.body;
+    console.log("input"+waist)
     const existingUser = await User.findOne({ email });
     if (existingUser) {
       return res.status(400).json({ error: "User already exists" });
     }
     const hashedPassword = await bcrypt.hash(password, 10);
-    const newUser = new User({ name, email, password: hashedPassword, age, height, weight, activity_level, goal });
+    const newUser = new User({ name, email, password: hashedPassword, age, height, weight,waist, activity_level, goal });
     await newUser.save();
+    console.log("reg:"+newUser.waist)
     res.status(201).json({ message: "User registered successfully" });
   } catch (error) {
     res.status(500).json({ error: "Error registering user" });
@@ -154,13 +193,13 @@ const authMiddleware = (req, res, next) => {
     try {
       const user = await User.findById(req.user.userId);
       if (!user) return res.status(404).json({ error: "User not found" });
-        // console.log(user.age)
+      console.log("user"+user.waist)
       // Send user details to ML model for recommendations
       const response = await axios.post(`http://127.0.0.1:5001/api/recommend`, {
         age: user.age,
         height: user.height,
         weight: user.weight,
-        waist: 0,  // Adjust if necessary
+        waist: user.waist,  // Adjust if necessary
         gender: "male", // Adjust as per your schema
         activity_level: user.activity_level,
         goal: user.goal
@@ -283,8 +322,158 @@ const authMiddleware = (req, res, next) => {
   });
   
 
-  cron.schedule("0 0 * * *", async () => {
-    await User.updateMany({}, { $set: { loggedMeals: [] } });
+  // cron.schedule("0 0 * * *", async () => {
+  //   await User.updateMany({}, { $set: { loggedMeals: [] } });
+  // });
+
+  // --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+
+  app.post("/api/profile", async (req, res) => {
+    const { userId, bio, profilePicture, progress } = req.body;
+    const profile = await UserProfile.findOneAndUpdate(
+      { userId },
+      { bio, profilePicture, progress },
+      { upsert: true, new: true }
+    );
+    res.json(profile);
+  });
+
+  // server.js
+app.get("/api/profile/:userId", async (req, res) => {
+  try {
+    const profile = await UserProfile.findOne({ userId: req.params.userId });
+    console.log(req.params.userId)
+    res.json(profile);
+  } catch (error) {
+    res.status(500).json({ error: "Error fetching profile" });
+  }
+});
+
+
+
+  app.post("/api/challenges", async (req, res) => {
+    const { title, description, startDate, endDate } = req.body;
+    const challenge = new Challenge({ title, description, startDate, endDate });
+    await challenge.save();
+    res.json(challenge);
+  });
+
+
+
+  app.post("/api/challenges/:challengeId/join", async (req, res) => {
+    const { userId } = req.body;
+    const challenge = await Challenge.findByIdAndUpdate(
+      req.params.challengeId,
+      { $push: { participants: userId } },
+      { new: true }
+    );
+    res.json(challenge);
+  });
+
+
+  // server.js
+app.get("/api/challenges", async (req, res) => {
+  try {
+    const challenges = await Challenge.find();
+    res.json(challenges);
+  } catch (error) {
+    res.status(500).json({ error: "Error fetching challenges" });
+  }
+});
+
+
+
+app.post("/api/posts", async (req, res) => {
+  const { userId, content } = req.body;
+  const post = new Post({ userId, content });
+  await post.save();
+  res.json(post);
+});
+
+
+
+app.post("/api/posts/:postId/like", async (req, res) => {
+  try {
+    const postId = req.params.postId;
+    const { userId } = req.body;
+
+    const post = await Post.findById(postId);
+    if (!post) return res.status(404).json({ error: "Post not found" });
+
+    // Check if the user already liked the post
+    const userIndex = post.likes.indexOf(userId);
+    if (userIndex === -1) {
+      // Like the post
+      post.likes.push(userId);
+    } else {
+      // Unlike the post
+      post.likes.splice(userIndex, 1);
+    }
+
+    await post.save();
+    res.json(post);
+  } catch (error) {
+    res.status(500).json({ error: "Error liking post" });
+  }
+});
+
+
+app.post("/api/posts/:postId/reply", async (req, res) => {
+  try {
+    const postId = req.params.postId;
+    const { userId, content, parentReplyId } = req.body;
+
+    const post = await Post.findById(postId);
+    if (!post) return res.status(404).json({ error: "Post not found" });
+
+    // Add the reply to the post
+    post.replies.push({ userId, content, parentReplyId });
+    await post.save();
+
+    res.json(post);
+  } catch (error) {
+    res.status(500).json({ error: "Error adding reply" });
+  }
+});
+
+
+const buildNestedReplies = (replies, parentReplyId = null) => {
+  return replies
+    .filter((reply) => reply.parentReplyId?.toString() === parentReplyId?.toString())
+    .map((reply) => ({
+      ...reply.toObject(),
+      replies: buildNestedReplies(replies, reply._id), // Recursively find nested replies
+    }));
+};
+
+app.get("/api/posts", async (req, res) => {
+  try {
+    const posts = await Post.find()
+      .populate("userId", "name") // Populate the post creator's name
+      .populate("replies.userId", "name"); // Populate the reply creator's name
+
+    // Build nested replies for each post
+    const postsWithNestedReplies = posts.map((post) => ({
+      ...post.toObject(),
+      replies: buildNestedReplies(post.replies),
+    }));
+
+    res.json(postsWithNestedReplies);
+  } catch (error) {
+    res.status(500).json({ error: "Error fetching posts" });
+  }
+});
+
+
+  app.delete("/api/posts/:postId", async (req, res) => {
+    try {
+      const postId = req.params.postId;
+      await Post.findByIdAndDelete(postId); // Delete the post
+      res.json({ message: "Post deleted successfully" });
+    } catch (error) {
+      res.status(500).json({ error: "Error deleting post" });
+    }
   });
 
 
@@ -300,6 +489,24 @@ const authMiddleware = (req, res, next) => {
 
 
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+  // --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
 // Start Server
 const PORT = process.env.PORT || 5001;
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));
