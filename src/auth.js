@@ -12,8 +12,10 @@ const Register = () => {
     height: "",
     weight: "",
     waist: "",
+    neck:"",
     activity_level: "sedentary", // Provide a valid initial value
     goal: "weight_loss", // Provide a valid initial value
+    diet:"Non-Vegetarian",
   });
 
   const navigate = useNavigate();
@@ -44,6 +46,19 @@ const Register = () => {
         <TextField label="Height (cm)" type="number" name="height" onChange={handleChange} required fullWidth />
         <TextField label="Weight (kg)" type="number" name="weight" onChange={handleChange} required fullWidth />
         <TextField label="Waist (cm)" type="number" name="waist" onChange={handleChange} required fullWidth />
+        <TextField label="neck (cm)" type="number" name="neck" onChange={handleChange} required fullWidth />
+        <TextField
+          select
+          label="Diet"
+          name="diet"
+          value={formData.diet} // Controlled value
+          onChange={handleChange}
+          required
+          fullWidth
+        >
+          <MenuItem value="Vegetarian">Vegetarian</MenuItem>
+          <MenuItem value="Non-Vegetarian">Non-Vegetarian</MenuItem>
+        </TextField>
         <TextField
           select
           label="Activity Level"
@@ -54,7 +69,6 @@ const Register = () => {
           fullWidth
         >
           <MenuItem value="sedentary">Sedentary</MenuItem>
-          <MenuItem value="light">Light</MenuItem>
           <MenuItem value="moderate">Moderate</MenuItem>
           <MenuItem value="active">Active</MenuItem>
           <MenuItem value="very_active">Very Active</MenuItem>
@@ -94,7 +108,7 @@ const Login = () => {
     if (response.ok) {
       localStorage.setItem("token", data.token);
       localStorage.setItem("userId",data.user._id)
-      // console.log(data.user._id)
+       console.log(data.token)
       navigate("/dashboard");
     }
   };

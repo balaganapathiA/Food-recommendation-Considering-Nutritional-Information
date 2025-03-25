@@ -13,7 +13,6 @@ def calculate_metrics(height, weight, age, gender, waist, neck, activity_level, 
     
     # BMI Calculation
     bmi = weight / ((height / 100) ** 2)
-
     # BMR Calculation (Mifflin-St Jeor Equation)
     if gender_encoded == 1:
         bmr = 10 * weight + 6.25 * height - 5 * age + 5

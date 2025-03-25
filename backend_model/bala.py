@@ -53,9 +53,9 @@ def calculate_metrics(height, weight, age, gender, waist, neck, activity_level, 
     # Daily Calorie Needs Calculation
     activity_multipliers = {
         'sedentary': 1.2, 
-        'lightly active': 1.375, 
-        'moderate': 1.55, 
-        'highly active': 1.725
+         'light': 1.375, 
+        'moderate' or 'active': 1.55, 
+        'very_active': 1.725
     }
     
     if activity_level.lower() not in activity_multipliers:

@@ -238,7 +238,7 @@ app.get("/api/recommend", authMiddleware, async (req, res) => {
           height: user.height,
           weight: user.weight,
           waist: user.waist || (user.gender === 'male' ? 85 : 75), // Gender-specific default waist
-          neck: 20 || (user.gender === 'male' ? 40 : 35),    // Gender-specific default neck
+          neck: user.neck || (user.gender === 'male' ? 40 : 35),    // Gender-specific default neck
           gender: user.gender || 'male',                            // Default to male if not specified
           activity_level: user.activity_level,
           diet: user.diet || 'Non-Vegetarian',                     // Default diet
