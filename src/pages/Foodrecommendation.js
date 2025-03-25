@@ -23,7 +23,7 @@ import {
 } from "@mui/material";
 import { Delete as DeleteIcon } from "@mui/icons-material";
 
-const Dashboard = () => {
+const Foodrecommendations = () => {
   const [userData, setUserData] = useState(null);
   const [foods, setFoods] = useState({ Breakfast: [], Lunch: [], Dinner: [] });
   const navigate = useNavigate();
@@ -245,12 +245,12 @@ const Dashboard = () => {
       </AppBar>
 
       <Container>
-        <Typography variant="h4" gutterBottom>
+        {/* <Typography variant="h4" gutterBottom>
           Welcome {userData?.name}
         </Typography>
 
         <Grid container spacing={3}>
-          {/* Health Metrics Section */}
+          { Health Metrics Section }
           <Grid item xs={12} md={6}>
             <Card>
               <CardContent>
@@ -271,151 +271,145 @@ const Dashboard = () => {
                     <ListItemText primary="WHtR" secondary={WHtR || "N/A"} />
                   </ListItem>
                   <ListItem>
-                    <ListItemText
-                      primary="Category"
-                      secondary={category || "N/A"}
+                    <ListItemText primary="Category" secondary={category || "N/A"} />
+                  </ListItem>
+                  <ListItem>
+                    <ListItemText 
+                      primary="Daily Calories" 
+                      secondary={DailyCalories ? `${DailyCalories} cal` : "N/A"} 
                     />
                   </ListItem>
                   <ListItem>
-                    <ListItemText
-                      primary="Daily Calories"
-                      secondary={DailyCalories ? `${DailyCalories} cal` : "N/A"}
+                    <ListItemText 
+                      primary="Total Calories Consumed" 
+                      secondary={`${totalCaloriesConsumed} cal`} 
                     />
                   </ListItem>
                   <ListItem>
-                    <ListItemText
-                      primary="Total Calories Consumed"
-                      secondary={`${totalCaloriesConsumed} cal`}
-                    />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemText
-                      primary="Remaining Calories"
-                      secondary={`${
-                        remainingCalories >= 0 ? remainingCalories : 0
-                      } cal`}
+                    <ListItemText 
+                      primary="Remaining Calories" 
+                      secondary={`${remainingCalories >= 0 ? remainingCalories : 0} cal`} 
                     />
                   </ListItem>
                 </List>
-              </CardContent>
-            </Card>
-          </Grid>
-
-          {/* Food Recommendations Section */}
-          {/* <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent>
-                <Typography variant="h5" gutterBottom>
-                  Food Recommendations
-                </Typography>
-                {foods?.Breakfast?.length > 0 ? (
-                  <>
-                    <Typography variant="h6">Breakfast</Typography>
-                    <List>
-                      {foods.Breakfast.map((item, index) => (
-                        <ListItem key={index}>
-                          <ListItemText
-                            primary={item.Meal}
-                            secondary={`${item.Calories} cal (P: ${item.Protein}g, F: ${item.Fats}g, C: ${item.Carbs}g)`}
-                          />
-                          <Button
-                            variant="contained"
-                            color="primary"
-                            onClick={() => logMeal(item.Meal, item.Calories)}
-                          >
-                            Ate
-                          </Button>
-                        </ListItem>
-                      ))}
-                    </List>
-
-                    <Typography variant="h6">Lunch</Typography>
-                    <List>
-                      {foods.Lunch.map((item, index) => (
-                        <ListItem key={index}>
-                          <ListItemText
-                            primary={item.Meal}
-                            secondary={`${item.Calories} cal (P: ${item.Protein}g, F: ${item.Fats}g, C: ${item.Carbs}g)`}
-                          />
-                          <Button
-                            variant="contained"
-                            color="primary"
-                            onClick={() => logMeal(item.Meal, item.Calories)}
-                          >
-                            Ate
-                          </Button>
-                        </ListItem>
-                      ))}
-                    </List>
-
-                    <Typography variant="h6">Dinner</Typography>
-                    <List>
-                      {foods.Dinner.map((item, index) => (
-                        <ListItem key={index}>
-                          <ListItemText
-                            primary={item.Meal}
-                            secondary={`${item.Calories} cal (P: ${item.Protein}g, F: ${item.Fats}g, C: ${item.Carbs}g)`}
-                          />
-                          <Button
-                            variant="contained"
-                            color="primary"
-                            onClick={() => logMeal(item.Meal, item.Calories)}
-                          >
-                            Ate
-                          </Button>
-                        </ListItem>
-                      ))}
-                    </List>
-                  </>
-                ) : (
-                  <Typography>No recommendations available.</Typography>
-                )}
               </CardContent>
             </Card>
           </Grid> */}
 
-          {/* Logged Meals Section */}
-          <Grid item xs={12}>
-            <Card>
-              <CardContent>
-                <Typography variant="h5" gutterBottom>
-                  Logged Meals
-                </Typography>
-                <TextField
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  fullWidth
-                  margin="normal"
-                />
-                <List>
-                  {loggedMeals?.length > 0 ? (
-                    loggedMeals.map((meal, index) => (
+        {/* Food Recommendations Section */}
+        <Grid item xs={12} md={6}>
+          <Card>
+            <CardContent>
+              <Typography variant="h5" gutterBottom>
+                Food Recommendations
+              </Typography>
+              {foods?.Breakfast?.length > 0 ? (
+                <>
+                  <Typography variant="h6">Breakfast</Typography>
+                  <List>
+                    {foods.Breakfast.map((item, index) => (
                       <ListItem key={index}>
                         <ListItemText
-                          primary={meal?.food}
-                          secondary={`${meal?.calories} cal`}
+                          primary={item.Meal}
+                          secondary={`${item.Calories} cal (P: ${item.Protein}g, F: ${item.Fats}g, C: ${item.Carbs}g)`}
                         />
-                        <IconButton
-                          color="error"
-                          onClick={() => removeMeal(meal.food)}
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          onClick={() => logMeal(item.Meal, item.Calories)}
                         >
-                          <DeleteIcon />
-                        </IconButton>
+                          Ate
+                        </Button>
                       </ListItem>
-                    ))
-                  ) : (
-                    <Typography>No meals logged yet.</Typography>
-                  )}
-                </List>
-              </CardContent>
-            </Card>
-          </Grid>
+                    ))}
+                  </List>
 
-          {/* Macronutrient Chart Section */}
-          <Grid item xs={12}>
-            {userData && <MacronutrientChart userId={userData._id} />}
-          </Grid>
+                  <Typography variant="h6">Lunch</Typography>
+                  <List>
+                    {foods.Lunch.map((item, index) => (
+                      <ListItem key={index}>
+                        <ListItemText
+                          primary={item.Meal}
+                          secondary={`${item.Calories} cal (P: ${item.Protein}g, F: ${item.Fats}g, C: ${item.Carbs}g)`}
+                        />
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          onClick={() => logMeal(item.Meal, item.Calories)}
+                        >
+                          Ate
+                        </Button>
+                      </ListItem>
+                    ))}
+                  </List>
+
+                  <Typography variant="h6">Dinner</Typography>
+                  <List>
+                    {foods.Dinner.map((item, index) => (
+                      <ListItem key={index}>
+                        <ListItemText
+                          primary={item.Meal}
+                          secondary={`${item.Calories} cal (P: ${item.Protein}g, F: ${item.Fats}g, C: ${item.Carbs}g)`}
+                        />
+                        <Button
+                          variant="contained"
+                          color="primary"
+                          onClick={() => logMeal(item.Meal, item.Calories)}
+                        >
+                          Ate
+                        </Button>
+                      </ListItem>
+                    ))}
+                  </List>
+                </>
+              ) : (
+                <Typography>No recommendations available.</Typography>
+              )}
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Logged Meals Section */}
+        <Grid item xs={12}>
+          <Card>
+            <CardContent>
+              <Typography variant="h5" gutterBottom>
+                Logged Meals
+              </Typography>
+              <TextField
+                type="date"
+                value={selectedDate}
+                onChange={(e) => setSelectedDate(e.target.value)}
+                fullWidth
+                margin="normal"
+              />
+              <List>
+                {loggedMeals?.length > 0 ? (
+                  loggedMeals.map((meal, index) => (
+                    <ListItem key={index}>
+                      <ListItemText
+                        primary={meal?.food}
+                        secondary={`${meal?.calories} cal`}
+                      />
+                      <IconButton
+                        color="error"
+                        onClick={() => removeMeal(meal.food)}
+                      >
+                        <DeleteIcon />
+                      </IconButton>
+                    </ListItem>
+                  ))
+                ) : (
+                  <Typography>No meals logged yet.</Typography>
+                )}
+              </List>
+            </CardContent>
+          </Card>
+        </Grid>
+
+        {/* Macronutrient Chart Section */}
+        <Grid item xs={12}>
+          {userData && <MacronutrientChart userId={userData._id} />}
         </Grid>
 
         <Snackbar
@@ -433,9 +427,10 @@ const Dashboard = () => {
           </Alert>
         </Snackbar>
       </Container>
+
       {/* {userData && <Forum userId={userData._id} />} */}
     </div>
   );
 };
 
-export default Dashboard;
+export default Foodrecommendations;

@@ -8,35 +8,33 @@ require("dotenv").config();
 
 const axios = require("axios");
 const app = express();
-app.use(express.json());
-app.use(cors());
+app.use(express.json());  
 app.use(cors({ origin: "http://localhost:3000" }));
-
 // Connect to MongoDB
 mongoose.connect(process.env.MONGO_URI, {
   useNewUrlParser: true,
   useUnifiedTopology: true,
- }).then(() => console.log("MongoDB connected"))
-   .catch(err => console.log(err));
+}).then(() => console.log("MongoDB connected"))
+.catch(err => console.log(err));
 
 // User Schema
 const UserSchema = new mongoose.Schema({
-    name: String,
-    email: { type: String, unique: true },
-    password: String,
-    age: Number,
-    height: Number,
-    weight: Number,
-    waist: Number,
-    activity_level: String,
+  name: String,
+  email: { type: String, unique: true },
+  password: String,
+  age: Number,
+  height: Number,
+  weight: Number,
+  waist: Number,
+  activity_level: String,
     goal: String,
     loggedMeals: [{ food: String, calories: Number, date: { type: Date, default: Date.now } }]
   });
-
-const User = mongoose.model("User", UserSchema);
-
-
-const foodSchema = new mongoose.Schema({
+  
+  const User = mongoose.model("User", UserSchema);
+  
+  
+  const foodSchema = new mongoose.Schema({
     Food_items: String,
     Breakfast: Number,
     Lunch: Number,
@@ -46,17 +44,17 @@ const foodSchema = new mongoose.Schema({
     Proteins: Number,
     Carbohydrates: Number,
   } ,{ collection: "foods" });
-
-
+  
+  
   const Food = mongoose.model("Food", foodSchema);
   // --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
-
-
-
-
-
-
-
+  
+  
+  
+  
+  
+  
+  
   const replySchema = new mongoose.Schema({
     userId: { type: mongoose.Schema.Types.ObjectId, ref: "User" },
     content: String,
@@ -72,66 +70,96 @@ const foodSchema = new mongoose.Schema({
     likes: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     replies: [replySchema],
   });
+  
   const Post = mongoose.model("Post", postSchema);
-
-
-
-
-
-
-
-
-
-
-
-
-
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
+  
   // --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
   app.get("/api/macronutrients/:userId", async (req, res) => {
     try {
       const userId = req.params.userId;
-    //   console.log(`Fetching macronutrients for user: ${userId}`);
-  
       const user = await User.findById(userId);
       if (!user) {
-        // console.log("User not found");
-        return res.status(404).json({ message: "User not found" });
+        return res.status(404).json({ error: "User not found" });
       }
   
-      const recommendedFoods = await Food.find({
-        $or: [{ Breakfast: 1 }, { Lunch: 1 }, { Dinner: 1 }]
+      // Prepare request data
+      const requestData = {
+        age: user.age,
+          height: user.height,
+          weight: user.weight,
+          waist: user.waist || (user.gender === 'male' ? 85 : 75), // Gender-specific default waist
+          neck: 20 || (user.gender === 'male' ? 40 : 35),    // Gender-specific default neck
+          gender: user.gender || 'male',                            // Default to male if not specified
+          activity_level: user.activity_level,
+          diet: user.diet || 'Non-Vegetarian',                     // Default diet
+          health_goal: user.goal || 'weight_loss'
+      };
+  
+      // Call Flask API
+      const response = await axios.post('http://127.0.0.1:5000/calculate', requestData);
+  
+      // Process the actual response structure you're getting
+      const recommendations = response.data.food_recommendations;
+      
+      // Initialize totals
+      let totalFats = 0;
+      let totalProteins = 0;
+      let totalCarbs = 0;
+  
+      // Process each meal category
+      ['Breakfast', 'Lunch', 'Dinner'].forEach(mealType => {
+        if (recommendations[mealType]) {
+          recommendations[mealType].forEach(food => {
+            totalFats += food.Fats || 0;
+            totalProteins += food.Proteins || 0;
+            totalCarbs += food.Carbohydrates || 0;
+          });
+        }
       });
   
-    //   console.log("Recommended foods found:", recommendedFoods.length);
-  
-      let totalFats = 0, totalProteins = 0, totalCarbohydrates = 0;
-  
-      recommendedFoods.forEach((food) => {
-        totalFats += food.Fats || 0;
-        totalProteins += food.Proteins || 0;
-        totalCarbohydrates += food.Carbohydrates || 0;
+      res.json({
+        success: true,
+        Fats: totalFats,
+        Proteins: totalProteins,
+        Carbohydrates: totalCarbs,
+        mealRecommendations: recommendations
       });
   
-    //   console.log("Total Macronutrients:", { Fats: totalFats, Proteins: totalProteins, Carbohydrates: totalCarbohydrates });
-  
-      res.json({ Fats: totalFats, Proteins: totalProteins, Carbohydrates: totalCarbohydrates });
     } catch (error) {
-      console.error("Error fetching macronutrient data:", error);
-      res.status(500).json({ message: "Error fetching macronutrient data" });
+      console.error("Error:", error);
+      res.status(500).json({
+        success: false,
+        error: error.message,
+        receivedData: error.response?.data // For debugging
+      });
     }
   });
   
   
   
-// Register Route
-app.post("/api/register", async (req, res) => {
-  try {
-    const { name, email, password, age, height, weight,waist, activity_level, goal } = req.body;
-    console.log("input"+waist)
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
-      return res.status(400).json({ error: "User already exists" });
-    }
+  // Register Route
+  app.post("/api/register", async (req, res) => {
+    try {
+      const { name, email, password, age, height, weight,waist, activity_level, goal } = req.body;
+      console.log("input"+waist)
+      const existingUser = await User.findOne({ email });
+      if (existingUser) {
+        return res.status(400).json({ error: "User already exists" });
+      }
     const hashedPassword = await bcrypt.hash(password, 10);
     const newUser = new User({ name, email, password: hashedPassword, age, height, weight,waist, activity_level, goal });
     await newUser.save();
@@ -153,7 +181,6 @@ app.post("/api/login", async (req, res) => {
     if (!isMatch) return res.status(400).json({ error: "Invalid credentials" });
 
     const token = jwt.sign({ userId: user._id }, process.env.JWT_SECRET, { expiresIn: "1h" });
-    // localStorage.setItem(token)
     res.json({ token, user });
   } catch (error) {
     res.status(500).json({ error: "Error logging in" });
@@ -162,65 +189,108 @@ app.post("/api/login", async (req, res) => {
 
 // Protected Route Example (Requires JWT)
 const authMiddleware = (req, res, next) => {
-    const authHeader = req.header("Authorization");
-    
-    if (!authHeader || !authHeader.startsWith("Bearer ")) {
-      return res.status(401).json({ error: "Access denied. Token missing or invalid." });
-    }
-  
-    const token = authHeader.split(" ")[1]; // Extract the actual token
-    try {
-      const verified = jwt.verify(token, process.env.JWT_SECRET);
-      req.user = verified;
-      next();
-    } catch (error) {
-      res.status(400).json({ error: "Invalid token" });
-    }
-  };
+  const authHeader = req.header("Authorization");
+
+  if (!authHeader || !authHeader.startsWith("Bearer ")) {
+    return res.status(401).json({ error: "Access denied. Token missing or invalid." });
+  }
+
+  const token = authHeader.split(" ")[1];
+  try {
+    const verified = jwt.verify(token, process.env.JWT_SECRET);
+    req.user = verified;
+    next();
+  } catch (error) {
+    res.status(400).json({ error: "Invalid token" });
+  }
+};
   
 
-  app.get("/api/dashboard", authMiddleware, async (req, res) => {
-    try {
+app.get("/api/dashboard", authMiddleware, async (req, res) => {
+  try {
+    const user = await User.findById(req.user.userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
+    res.json({ message: "Welcome to the dashboard!", user });
+  } catch (error) {
+    console.error("Error in /api/dashboard:", error); // Log the error
+    res.status(500).json({ error: "Server error" });
+  }
+});
+
+
+app.get("/api/recommend", authMiddleware, async (req, res) => {
+  try {
       const user = await User.findById(req.user.userId);
       if (!user) {
-        return res.status(404).json({ error: "User not found" });
+          return res.status(404).json({ error: "User not found" });
       }
-      res.json({ message: "Welcome to the dashboard!", user });
-    } catch (error) {
-      res.status(500).json({ error: "Server error" });
-    }
-  });
-  app.get("/api/recommend", authMiddleware, async (req, res) => {
-    try {
-      const user = await User.findById(req.user.userId);
-      if (!user) return res.status(404).json({ error: "User not found" });
-      // console.log("user"+user.waist)
-      // Send user details to ML model for recommendations
-      const response = await axios.post(`http://127.0.0.1:5001/api/recommend`, {
-        age: user.age,
-        height: user.height,
-        weight: user.weight,
-        waist: user.waist || 0,  // Adjust if necessary
-        gender: "male", // Adjust as per your schema
-        activity_level: user.activity_level,
-        goal: user.goal
-      });
-    //   console.log("foos"+response.data["Recommended Foods"])
-      res.json({
-        BFP: response.data["BFP"],
-        BMI: response.data["BMI"],
-        BMR: response.data["BMR"],
-        Category: response.data["Category"],
-        DailyCalories: response.data["Daily Calories"],
-        WHtR: response.data["WHtR"],
 
-        foods: response.data["Recommended Foods"]
+      // Validate required user fields
+      if (!user.height || !user.weight || !user.age || !user.activity_level || !user.goal) {
+          return res.status(400).json({ error: "Missing required user data for recommendations" });
+      }
+
+      // Prepare request data with proper fallbacks
+      const requestData = {
+          age: user.age,
+          height: user.height,
+          weight: user.weight,
+          waist: user.waist || (user.gender === 'male' ? 85 : 75), // Gender-specific default waist
+          neck: 20 || (user.gender === 'male' ? 40 : 35),    // Gender-specific default neck
+          gender: user.gender || 'male',                            // Default to male if not specified
+          activity_level: user.activity_level,
+          diet: user.diet || 'Non-Vegetarian',                     // Default diet
+          health_goal: user.goal || 'weight_loss'
+      };
+
+      // Call Flask API
+      const response = await axios.post('http://127.0.0.1:5000/calculate', requestData, {
+          timeout: 5000 // 5-second timeout
       });
-    } catch (error) {
-        // console.log("cant fetching")
-      res.status(500).json({ error: "Error fetching recommendations from ML model" });
-    }
-  });
+      // console.log(response.data.metrics.category)
+      // Format the response
+      const formattedResponse = {
+          metrics: {
+              BFP: response.data.metrics.BFP,
+              BMI: response.data.metrics.BMI,
+              BMR: response.data.metrics.BMR,
+              WHtR: response.data.metrics.WHtR,
+              category:response.data.metrics.category,
+              DailyCalories: response.data.metrics['Calorie Goal'],
+              totalDailyEnergyExpenditure: response.data.metrics.TDEE
+          },
+          foodRecommendations: response.data.food_recommendations
+      };
+
+      res.json(formattedResponse);
+
+  } catch (error) {
+      console.error("Recommendation error:", error);
+
+      // Handle different error scenarios
+      if (error.response) {
+          // The request was made and the server responded with a status code
+          res.status(error.response.status).json({ 
+              error: "ML model error",
+              details: error.response.data.metrics 
+          });
+      } else if (error.request) {
+          // The request was made but no response was received
+          res.status(503).json({ error: "ML service unavailable" });
+      } else if (error.code === 'ECONNABORTED') {
+          // Request timeout
+          res.status(504).json({ error: "ML service timeout" });
+      } else {
+          // Something happened in setting up the request
+          res.status(500).json({ 
+              error: "Error fetching recommendations",
+              details: error.message 
+          });
+      }
+  }
+});
 
 
 
@@ -411,6 +481,8 @@ const upload = multer({ storage });
 //   res.json(post);
 // });
 
+// server.js
+// server.js
 app.post("/api/posts", upload.single("image"), async (req, res) => {
   try {
     const { userId, content } = req.body;
@@ -424,6 +496,12 @@ app.post("/api/posts", upload.single("image"), async (req, res) => {
     res.status(500).json({ error: "Error creating post" });
   }
 });
+
+
+
+
+
+
 
 
 app.post("/api/posts/:postId/like", async (req, res) => {
@@ -471,6 +549,18 @@ app.post("/api/posts/:postId/reply", async (req, res) => {
 });
 
 
+// app.get("/api/forum", authMiddleware, async (req, res) => {
+//   try {
+//     const user = await User.findById(req.user.userId);
+//     if (!user) {
+//       return res.status(404).json({ error: "User not found" });
+//     }
+//     res.json({ message: "Welcome to the dashboard!", user });
+//   } catch (error) {
+//     res.status(500).json({ error: "Server error" });
+//   }
+// });
+
 const buildNestedReplies = (replies, parentReplyId = null) => {
   return replies
     .filter((reply) => reply.parentReplyId?.toString() === parentReplyId?.toString())
@@ -479,6 +569,12 @@ const buildNestedReplies = (replies, parentReplyId = null) => {
       replies: buildNestedReplies(replies, reply._id), // Recursively find nested replies
     }));
 };
+
+
+
+
+
+
 
 app.get("/api/posts", async (req, res) => {
   try {
@@ -497,6 +593,8 @@ app.get("/api/posts", async (req, res) => {
     res.status(500).json({ error: "Error fetching posts" });
   }
 });
+
+
 
 
   app.delete("/api/posts/:postId", async (req, res) => {

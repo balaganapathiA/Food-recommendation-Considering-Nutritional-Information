@@ -93,6 +93,8 @@ const Login = () => {
     const data = await response.json();
     if (response.ok) {
       localStorage.setItem("token", data.token);
+      localStorage.setItem("userId",data.user._id)
+      // console.log(data.user._id)
       navigate("/dashboard");
     }
   };
