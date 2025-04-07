@@ -50,6 +50,7 @@ const Dashboard = () => {
   const [showGoalAchieved, setShowGoalAchieved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
+  const [BodyType, setBodyType] = useState(null);
 
   useEffect(() => {
     const token = localStorage.getItem("token");
@@ -78,7 +79,6 @@ const Dashboard = () => {
 
   useEffect(() => {
     if (!userData) return;
-
     const token = localStorage.getItem("token");
     setLoading(true);
     fetch("http://localhost:5001/api/recommend", {
@@ -98,6 +98,7 @@ const Dashboard = () => {
           setDailyCalories(data.metrics?.DailyCalories);
           setWHtR(data.metrics?.WHtR);
           setCategory(data.metrics?.category);
+          setBodyType(data.metrics?.BodyType);  // New
         }
         setLoading(false);
       })
@@ -389,31 +390,29 @@ const Dashboard = () => {
                   <Divider sx={{ my: 2 }} />
 
                   <Grid container spacing={2}>
-                    {[
-                      { label: "BMI", value: BMI },
-                      { label: "BFP", value: BFP },
-                      { label: "BMR", value: BMR },
-                      { label: "Weight To Height Ratio", value: WHtR }
-                    ].map((metric, index) => (
-                      <Grid item xs={6} key={metric.label}>
-                        <motion.div
-                          initial={{ opacity: 0, y: 20 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          transition={{ delay: index * 0.1 }}
-                        >
-                          <Paper
-                            elevation={0}
-                            sx={{ p: 2, borderRadius: 2, bgcolor: "#E8F5E9" }}
-                          >
-                            <Typography variant="subtitle2">{metric.label}</Typography>
-                            <Typography variant="h6" sx={{ fontWeight: "bold" }}>
-                              {metric.value || "N/A"}
-                            </Typography>
-                          </Paper>
-                        </motion.div>
-                      </Grid>
-                    ))}
-                  </Grid>
+  {[
+    { label: "BMI", value: BMI },
+    { label: "BFP", value: BFP },
+    { label: "BMR", value: BMR },
+    { label: "WHtR", value: WHtR },
+    { label: "Body Type", value: BodyType }  // New
+  ].map((metric, index) => (
+    <Grid item xs={6} key={metric.label}>
+      <motion.div
+        initial={{ opacity: 0, y: 20 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: index * 0.1 }}
+      >
+        <Paper elevation={0} sx={{ p: 2, borderRadius: 2, bgcolor: "#E8F5E9" }}>
+          <Typography variant="subtitle2">{metric.label}</Typography>
+          <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+            {metric.value || "N/A"}
+          </Typography>
+        </Paper>
+      </motion.div>
+    </Grid>
+  ))}
+</Grid>
 
                   <Divider sx={{ my: 3 }} />
 

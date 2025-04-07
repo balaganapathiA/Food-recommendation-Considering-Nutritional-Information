@@ -47,7 +47,7 @@ const Foodrecommendations = () => {
   const [showGoalAchieved, setShowGoalAchieved] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState(null);
-
+  const [BodyType, setBodyType] = useState(null);
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -75,7 +75,6 @@ const Foodrecommendations = () => {
 
   useEffect(() => {
     if (!userData) return;
-
     const token = localStorage.getItem("token");
     setLoading(true);
     fetch("http://localhost:5001/api/recommend", {
@@ -95,6 +94,7 @@ const Foodrecommendations = () => {
           setDailyCalories(data.metrics?.DailyCalories);
           setWHtR(data.metrics?.WHtR);
           setCategory(data.metrics?.category);
+          setBodyType(data.metrics?.BodyType);  // New
         }
         setLoading(false);
       })
