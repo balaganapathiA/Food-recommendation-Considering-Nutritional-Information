@@ -227,11 +227,8 @@ app.get("/api/dashboard", authMiddleware, async (req, res) => {
 app.get("/api/recommend", authMiddleware, async (req, res) => {
   try {
     const user = await User.findById(req.user.userId);
-    if (!user) {
-      return res.status(404).json({ error: "User not found" });
-    }
+    if (!user) return res.status(404).json({ error: "User not found" });
 
-    // Prepare request data with user ID
     const requestData = {
       age: user.age,
       height: user.height,
@@ -242,100 +239,60 @@ app.get("/api/recommend", authMiddleware, async (req, res) => {
       activity_level: user.activity_level,
       diet: user.diet || 'Non-Vegetarian',
       health_goal: user.goal || 'weight_loss',
-      user_id: user._id.toString()
+      // user_id: user._id.toString()
     };
 
-    // Call Flask API
     const response = await axios.post('http://127.0.0.1:5000/calculate', requestData);
-
     let foodRecommendations = response.data.food_recommendations;
-    
-    // === Added: filter past 15 days ===
+
+    // 15-day filtering logic remains unchanged
     const fifteenDaysAgo = new Date();
     fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
-
     const recentHistory = user.recommendationHistory?.filter(
       entry => new Date(entry.date) >= fifteenDaysAgo
     ) || [];
-
     const recentlyRecommended = new Set();
-    recentHistory.forEach(entry => {
-      entry.foodItems.forEach(food => recentlyRecommended.add(food));
-    });
-    
+    recentHistory.forEach(entry => entry.foodItems.forEach(food => recentlyRecommended.add(food)));
     const todayFoods = [];
 
     ['Breakfast', 'Lunch', 'Dinner'].forEach(meal => {
-      const originalMeals = response.data.food_recommendations[meal] || [];
-      const filteredMeals = originalMeals.filter(
-        food => !recentlyRecommended.has(food.Meal)
-      );
-    
-      // If filtered meals exist, use them; otherwise fallback to original
+      const originalMeals = foodRecommendations[meal] || [];
+      const filteredMeals = originalMeals.filter(food => !recentlyRecommended.has(food.Meal));
       if (filteredMeals.length > 0) {
         foodRecommendations[meal] = filteredMeals;
         filteredMeals.forEach(food => todayFoods.push(food.Meal));
       } else {
         foodRecommendations[meal] = originalMeals;
         originalMeals.forEach(food => todayFoods.push(food.Meal));
-        console.log(`⚠️ No new meals found for ${meal}. Using repeated ones.`);
       }
     });
-    
 
-    // === Fallback if no meals left after filtering ===
-const totalFiltered = ['Breakfast', 'Lunch', 'Dinner'].reduce((count, meal) => {
-  return count + (foodRecommendations[meal]?.length || 0);
-}, 0);
-
-if (totalFiltered === 0) {
-  // fallback to original Flask response without filtering
-  foodRecommendations = response.data.food_recommendations;
-  todayFoods.length = 0; // reset today's foods
-  ['Breakfast', 'Lunch', 'Dinner'].forEach(meal => {
-    if (foodRecommendations[meal]) {
-      foodRecommendations[meal].forEach(food => todayFoods.push(food.Meal));
-    }
-  });
-}
-
-
-    // Update recommendationHistory if we got valid meals
-    if (todayFoods.length > 0) {
-      const today = new Date();
-today.setHours(0, 0, 0, 0); // normalize to start of day
-
-const alreadyExistsToday = recentHistory.some(entry => {
-  const entryDate = new Date(entry.date);
-  entryDate.setHours(0, 0, 0, 0);
-  return entryDate.getTime() === today.getTime();
-});
-
-if (!alreadyExistsToday && todayFoods.length > 0) {
-  user.recommendationHistory = recentHistory; // keep only last 15 days
-  user.recommendationHistory.push({
-    date: new Date(),
-    foodItems: [...new Set(todayFoods)] // remove duplicates just in case
-  });
-  await user.save();
-}
-
-    }
-    // === End 15-day filtering ===
-    console.log("Final foodRecommendations:", JSON.stringify(foodRecommendations, null, 2));
-
-    const hasValidMeals = ['Breakfast', 'Lunch', 'Dinner'].some(meal =>
-      Array.isArray(foodRecommendations[meal]) && foodRecommendations[meal].length > 0
-    );
-    
-    if (!hasValidMeals) {
-      return res.status(200).json({
-        metrics: response.data.metrics || {},
-        foodRecommendations: {},
-        message: "No recommendations available. We're working on personalized suggestions for you."
+    const totalFiltered = ['Breakfast', 'Lunch', 'Dinner'].reduce((count, meal) => {
+      return count + (foodRecommendations[meal]?.length || 0);
+    }, 0);
+    if (totalFiltered === 0) {
+      foodRecommendations = response.data.food_recommendations;
+      todayFoods.length = 0;
+      ['Breakfast', 'Lunch', 'Dinner'].forEach(meal => {
+        if (foodRecommendations[meal]) foodRecommendations[meal].forEach(food => todayFoods.push(food.Meal));
       });
     }
-    // Format the response
+
+    if (todayFoods.length > 0) {
+      const today = new Date();
+      today.setHours(0, 0, 0, 0);
+      const alreadyExistsToday = recentHistory.some(entry => {
+        const entryDate = new Date(entry.date);
+        entryDate.setHours(0, 0, 0, 0);
+        return entryDate.getTime() === today.getTime();
+      });
+      if (!alreadyExistsToday) {
+        user.recommendationHistory = recentHistory;
+        user.recommendationHistory.push({ date: new Date(), foodItems: [...new Set(todayFoods)] });
+        await user.save();
+      }
+    }
+
     const formattedResponse = {
       metrics: {
         BFP: response.data.metrics.BFP,
@@ -344,7 +301,8 @@ if (!alreadyExistsToday && todayFoods.length > 0) {
         WHtR: response.data.metrics.WHtR,
         category: response.data.metrics.category,
         DailyCalories: response.data.metrics['Calorie Goal'],
-        totalDailyEnergyExpenditure: response.data.metrics.TDEE
+        totalDailyEnergyExpenditure: response.data.metrics.TDEE,
+        BodyType: response.data.metrics['Body Type']  // New field
       },
       foodRecommendations
     };
