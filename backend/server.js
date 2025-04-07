@@ -29,6 +29,10 @@ const UserSchema = new mongoose.Schema({
   activity_level: String,
     goal: String,
     loggedMeals: [{ food: String, calories: Number, date: { type: Date, default: Date.now } }]
+    ,recommendationHistory: [{
+      date: { type: Date, default: Date.now },
+      foodItems: [String],
+    }]
   });
   
   const User = mongoose.model("User", UserSchema);
@@ -222,75 +226,136 @@ app.get("/api/dashboard", authMiddleware, async (req, res) => {
 
 app.get("/api/recommend", authMiddleware, async (req, res) => {
   try {
-      const user = await User.findById(req.user.userId);
-      if (!user) {
-          return res.status(404).json({ error: "User not found" });
-      }
+    const user = await User.findById(req.user.userId);
+    if (!user) {
+      return res.status(404).json({ error: "User not found" });
+    }
 
-      // Validate required user fields
-      if (!user.height || !user.weight || !user.age || !user.activity_level || !user.goal) {
-          return res.status(400).json({ error: "Missing required user data for recommendations" });
-      }
+    // Prepare request data with user ID
+    const requestData = {
+      age: user.age,
+      height: user.height,
+      weight: user.weight,
+      waist: user.waist || (user.gender === 'male' ? 85 : 75),
+      neck: 20 || (user.gender === 'male' ? 40 : 35),
+      gender: user.gender || 'male',
+      activity_level: user.activity_level,
+      diet: user.diet || 'Non-Vegetarian',
+      health_goal: user.goal || 'weight_loss',
+      user_id: user._id.toString()
+    };
 
-      // Prepare request data with proper fallbacks
-      const requestData = {
-          age: user.age,
-          height: user.height,
-          weight: user.weight,
-          waist: user.waist || (user.gender === 'male' ? 85 : 75), // Gender-specific default waist
-          neck: user.neck || (user.gender === 'male' ? 40 : 35),    // Gender-specific default neck
-          gender: user.gender || 'male',                            // Default to male if not specified
-          activity_level: user.activity_level,
-          diet: user.diet || 'Non-Vegetarian',                     // Default diet
-          health_goal: user.goal || 'weight_loss'
-      };
+    // Call Flask API
+    const response = await axios.post('http://127.0.0.1:5000/calculate', requestData);
 
-      // Call Flask API
-      const response = await axios.post('http://127.0.0.1:5000/calculate', requestData, {
-          timeout: 5000 // 5-second timeout
-      });
-      // console.log(response.data.metrics.category)
-      // Format the response
-      const formattedResponse = {
-          metrics: {
-              BFP: response.data.metrics.BFP,
-              BMI: response.data.metrics.BMI,
-              BMR: response.data.metrics.BMR,
-              WHtR: response.data.metrics.WHtR,
-              category:response.data.metrics.category,
-              DailyCalories: response.data.metrics['Calorie Goal'],
-              totalDailyEnergyExpenditure: response.data.metrics.TDEE
-          },
-          foodRecommendations: response.data.food_recommendations
-      };
+    let foodRecommendations = response.data.food_recommendations;
+    
+    // === Added: filter past 15 days ===
+    const fifteenDaysAgo = new Date();
+    fifteenDaysAgo.setDate(fifteenDaysAgo.getDate() - 15);
 
-      res.json(formattedResponse);
+    const recentHistory = user.recommendationHistory?.filter(
+      entry => new Date(entry.date) >= fifteenDaysAgo
+    ) || [];
 
-  } catch (error) {
-      console.error("Recommendation error:", error);
+    const recentlyRecommended = new Set();
+    recentHistory.forEach(entry => {
+      entry.foodItems.forEach(food => recentlyRecommended.add(food));
+    });
+    
+    const todayFoods = [];
 
-      // Handle different error scenarios
-      if (error.response) {
-          // The request was made and the server responded with a status code
-          res.status(error.response.status).json({ 
-              error: "ML model error",
-              details: error.response.data.metrics 
-          });
-      } else if (error.request) {
-          // The request was made but no response was received
-          res.status(503).json({ error: "ML service unavailable" });
-      } else if (error.code === 'ECONNABORTED') {
-          // Request timeout
-          res.status(504).json({ error: "ML service timeout" });
+    ['Breakfast', 'Lunch', 'Dinner'].forEach(meal => {
+      const originalMeals = response.data.food_recommendations[meal] || [];
+      const filteredMeals = originalMeals.filter(
+        food => !recentlyRecommended.has(food.Meal)
+      );
+    
+      // If filtered meals exist, use them; otherwise fallback to original
+      if (filteredMeals.length > 0) {
+        foodRecommendations[meal] = filteredMeals;
+        filteredMeals.forEach(food => todayFoods.push(food.Meal));
       } else {
-          // Something happened in setting up the request
-          res.status(500).json({ 
-              error: "Error fetching recommendations",
-              details: error.message 
-          });
+        foodRecommendations[meal] = originalMeals;
+        originalMeals.forEach(food => todayFoods.push(food.Meal));
+        console.log(`⚠️ No new meals found for ${meal}. Using repeated ones.`);
       }
+    });
+    
+
+    // === Fallback if no meals left after filtering ===
+const totalFiltered = ['Breakfast', 'Lunch', 'Dinner'].reduce((count, meal) => {
+  return count + (foodRecommendations[meal]?.length || 0);
+}, 0);
+
+if (totalFiltered === 0) {
+  // fallback to original Flask response without filtering
+  foodRecommendations = response.data.food_recommendations;
+  todayFoods.length = 0; // reset today's foods
+  ['Breakfast', 'Lunch', 'Dinner'].forEach(meal => {
+    if (foodRecommendations[meal]) {
+      foodRecommendations[meal].forEach(food => todayFoods.push(food.Meal));
+    }
+  });
+}
+
+
+    // Update recommendationHistory if we got valid meals
+    if (todayFoods.length > 0) {
+      const today = new Date();
+today.setHours(0, 0, 0, 0); // normalize to start of day
+
+const alreadyExistsToday = recentHistory.some(entry => {
+  const entryDate = new Date(entry.date);
+  entryDate.setHours(0, 0, 0, 0);
+  return entryDate.getTime() === today.getTime();
+});
+
+if (!alreadyExistsToday && todayFoods.length > 0) {
+  user.recommendationHistory = recentHistory; // keep only last 15 days
+  user.recommendationHistory.push({
+    date: new Date(),
+    foodItems: [...new Set(todayFoods)] // remove duplicates just in case
+  });
+  await user.save();
+}
+
+    }
+    // === End 15-day filtering ===
+    console.log("Final foodRecommendations:", JSON.stringify(foodRecommendations, null, 2));
+
+    const hasValidMeals = ['Breakfast', 'Lunch', 'Dinner'].some(meal =>
+      Array.isArray(foodRecommendations[meal]) && foodRecommendations[meal].length > 0
+    );
+    
+    if (!hasValidMeals) {
+      return res.status(200).json({
+        metrics: response.data.metrics || {},
+        foodRecommendations: {},
+        message: "No recommendations available. We're working on personalized suggestions for you."
+      });
+    }
+    // Format the response
+    const formattedResponse = {
+      metrics: {
+        BFP: response.data.metrics.BFP,
+        BMI: response.data.metrics.BMI,
+        BMR: response.data.metrics.BMR,
+        WHtR: response.data.metrics.WHtR,
+        category: response.data.metrics.category,
+        DailyCalories: response.data.metrics['Calorie Goal'],
+        totalDailyEnergyExpenditure: response.data.metrics.TDEE
+      },
+      foodRecommendations
+    };
+
+    res.json(formattedResponse);
+  } catch (error) {
+    console.error("Recommendation error:", error);
+    res.status(500).json({ error: "Error fetching recommendations" });
   }
 });
+
 
 
 

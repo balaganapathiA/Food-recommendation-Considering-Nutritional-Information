@@ -7,6 +7,17 @@ app = Flask(__name__)
 # Load the food recommendation dataset
 df = pd.read_csv('Food_recommendation_dataset.csv')
 
+# Convert all numeric columns to float
+numeric_cols = ['B_Calories', 'B_Protein', 'B_Fats', 'B_Carbs',
+               'L_Calories', 'L_Protein', 'L_Fats', 'L_Carbs',
+               'D_Calories', 'D_Protein', 'D_Fats', 'D_Carbs']
+
+for col in numeric_cols:
+    df[col] = pd.to_numeric(df[col], errors='coerce')  # Convert to numeric, invalid parsing will be set as NaN
+
+# Drop rows with NaN values in numeric columns
+df = df.dropna(subset=numeric_cols)
+
 def calculate_metrics(height, weight, age, gender, waist, neck, activity_level, diet, health_goal):
     try:
         height = float(height)
@@ -102,13 +113,14 @@ def recommend_food(calorie_goal, diet, health_goal):
     elif health_goal.lower() == 'weight_gain':
         # Higher carbs and protein
         filtered_data = filtered_data.sort_values(by=['B_Carbs', 'B_Protein', 'B_Fats'], ascending=[False, False, True])
-    else:  # Maintenance
+    else:  
+        # Maintenance
         # Balanced macronutrient ratio
         filtered_data = filtered_data.sort_values(by=['B_Protein', 'B_Fats', 'B_Carbs'], ascending=[False, True, True])
 
     # Divide calorie goals into proportional parts
     breakfast_goal = calorie_goal * 0.3  # 30% of total calories
-    lunch_goal = calorie_goal * 0.4      # 40% of total calories
+    lunch_goal = calorie_goal * 0.6     # 40% of total calories
     dinner_goal = calorie_goal * 0.3     # 30% of total calories
 
     # Function to find meals closest to the calorie goal
@@ -128,7 +140,7 @@ def recommend_food(calorie_goal, diet, health_goal):
         selected_meals = []
         total_calories = 0
         for _, meal in meals.iterrows():
-            if total_calories + meal[f'{meal_type}_Calories'] <= calorie_target * 1.1:  # Allow 10% over target
+            if total_calories + meal[f'{meal_type}_Calories'] <= calorie_target * 1.0:  # Allow 10% over target
                 selected_meals.append(meal)
                 total_calories += meal[f'{meal_type}_Calories']
                 if total_calories >= calorie_target:  # Stop if we reach 90% of the target

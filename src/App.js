@@ -3,7 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Register, Login } from "./auth";
 import Dashboard from "./pages/Dashboard";
 import MacronutrientChart from './components/MacronutrientChart';
-import Forum from './components/Forum'; // Import the Forum component
+import Forum from './components/Forum1'; // Import the Forum component
 import Foodrecommendations from './pages/Foodrecommendation';
 const App = () => {
   // Forum.js

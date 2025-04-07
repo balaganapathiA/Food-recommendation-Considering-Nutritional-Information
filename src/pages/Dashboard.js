@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
+import { motion } from "framer-motion";
 import MacronutrientChart from "../components/MacronutrientChart";
-import UserProfile from "../components/UserProfile";
-import Challenges from "../components/Challanges";
-import Forum from "../components/Forum";
 import {
   AppBar,
   Toolbar,
@@ -20,8 +18,18 @@ import {
   IconButton,
   Snackbar,
   Alert,
+  Paper,
+  Box,
+  Divider,
+  Chip,
 } from "@mui/material";
-import { Delete as DeleteIcon } from "@mui/icons-material";
+import {
+  Delete as DeleteIcon,
+  FitnessCenter,
+  Forum,
+  Restaurant,
+  ExitToApp,
+} from "@mui/icons-material";
 
 const Dashboard = () => {
   const [userData, setUserData] = useState(null);
@@ -50,7 +58,6 @@ const Dashboard = () => {
       return;
     }
 
-    // Fetch user data
     fetch("http://localhost:5001/api/dashboard", {
       method: "GET",
       headers: { Authorization: `Bearer ${token}` },
@@ -69,7 +76,6 @@ const Dashboard = () => {
       });
   }, [navigate]);
 
-  // Fetch food recommendations and health data
   useEffect(() => {
     if (!userData) return;
 
@@ -92,7 +98,6 @@ const Dashboard = () => {
           setDailyCalories(data.metrics?.DailyCalories);
           setWHtR(data.metrics?.WHtR);
           setCategory(data.metrics?.category);
-          // console.log("data=>"+data)
         }
         setLoading(false);
       })
@@ -101,8 +106,7 @@ const Dashboard = () => {
         setLoading(false);
       });
   }, [userData]);
-  // console.log(foods)
-  // Fetch logged meals
+
   useEffect(() => {
     if (!userData?._id) return;
 
@@ -122,7 +126,6 @@ const Dashboard = () => {
       .catch((err) => console.error("Error fetching logged meals:", err));
   }, [userData, DailyCalories]);
 
-  // Fetch meals for the selected date
   useEffect(() => {
     if (!userData?._id) return;
 
@@ -200,37 +203,139 @@ const Dashboard = () => {
 
   if (loading) {
     return (
-      <Container>
-        <Typography variant="h6">Loading...</Typography>
+      <Container sx={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        height: '100vh'
+      }}>
+        <motion.div
+          animate={{
+            scale: [1, 1.1, 1],
+            rotate: [0, 5, -5, 0]
+          }}
+          transition={{
+            duration: 1.5,
+            repeat: Infinity,
+            ease: "easeInOut"
+          }}
+        >
+          <FitnessCenter 
+            color="primary" 
+            sx={{ 
+              fontSize: 80,
+              mb: 2
+            }} 
+          />
+        </motion.div>
+        
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ duration: 0.5 }}
+        >
+          <Typography 
+            variant="h5" 
+            sx={{ 
+              fontWeight: 'bold',
+              color: '#2E7D32'
+            }}
+          >
+            Loading Your Health Data...
+          </Typography>
+        </motion.div>
+        
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: '50%' }}
+          transition={{ duration: 2, repeat: Infinity }}
+          style={{
+            height: 4,
+            backgroundColor: '#2E7D32',
+            borderRadius: 2,
+            marginTop: 20
+          }}
+        />
       </Container>
     );
   }
 
   if (error) {
     return (
-      <Container>
-        <Typography color="error">{error}</Typography>
+      <Container sx={{ 
+        display: 'flex', 
+        flexDirection: 'column', 
+        alignItems: 'center', 
+        justifyContent: 'center', 
+        height: '100vh'
+      }}>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          <Alert severity="error" sx={{ mb: 2 }}>
+            <Typography variant="h6" sx={{ fontWeight: 'bold' }}>
+              Error: {error}
+            </Typography>
+          </Alert>
+          <Button 
+            variant="contained" 
+            color="primary"
+            onClick={() => navigate('/login')}
+            sx={{ width: '100%' }}
+          >
+            Return to Login
+          </Button>
+        </motion.div>
       </Container>
     );
   }
 
   return (
-    <div>
-      <AppBar position="static">
+    <Box sx={{ display: "flex", flexDirection: "column", minHeight: "100vh" }}>
+      <AppBar position="static" sx={{ backgroundColor: "#2E7D32" }}>
         <Toolbar>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            <Link
-              to="/dashboard"
-              style={{ textDecoration: "none", color: "inherit" }}
+          <Box
+            component={Link}
+            to="/dashboard"
+            sx={{
+              flexGrow: 1,
+              textDecoration: "none",
+              color: "inherit",
+            }}
+          >
+            <Typography
+              variant="h6"
+              component="div"
+              sx={{
+                fontWeight: "bold",
+                fontFamily: '"Poppins", sans-serif',
+                fontSize: "1.25rem",
+                "&:hover": {
+                  opacity: 0.8,
+                },
+              }}
             >
-              Dashboard
-            </Link>
-          </Typography>
-          <Button color="inherit" onClick={() => navigate("/recommendation")}>
-            Food_Recommendations
+              HealthTrack
+            </Typography>
+          </Box>
+          <Button
+            color="inherit"
+            startIcon={<Restaurant />}
+            onClick={() => navigate("/recommendation")}
+            sx={{ mr: 2 }}
+          >
+            Food
           </Button>
-          <Button color="inherit" onClick={() => navigate("/forum")}>
-            Forum
+          <Button
+            color="inherit"
+            startIcon={<Forum />}
+            onClick={() => navigate("/forum")}
+            sx={{ mr: 2 }}
+          >
+            Community
           </Button>
           <Button
             color="inherit"
@@ -244,197 +349,254 @@ const Dashboard = () => {
         </Toolbar>
       </AppBar>
 
-      <Container>
-        <Typography variant="h4" gutterBottom>
-          Welcome {userData?.name}
+      <Container 
+        maxWidth="lg" 
+        sx={{ py: 4, flex: 1 }}
+        component={motion.div}
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+        transition={{ duration: 0.5 }}
+      >
+        <Typography
+          variant="h4"
+          gutterBottom
+          sx={{ fontWeight: "bold", color: "#2E7D32", mb: 4 }}
+          component={motion.div}
+          initial={{ y: -20 }}
+          animate={{ y: 0 }}
+          transition={{ duration: 0.3 }}
+        >
+          Welcome back, {userData?.name || "User"}!
         </Typography>
 
-        <Grid container spacing={3}>
+        <Grid container spacing={4}>
           {/* Health Metrics Section */}
           <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent>
-                <Typography variant="h5" gutterBottom>
-                  Your Health Metrics
-                </Typography>
-                <List>
-                  <ListItem>
-                    <ListItemText primary="BMI" secondary={BMI || "N/A"} />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemText primary="BFP" secondary={BFP || "N/A"} />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemText primary="BMR" secondary={BMR || "N/A"} />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemText primary="WHtR" secondary={WHtR || "N/A"} />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemText
-                      primary="Category"
-                      secondary={category || "N/A"}
-                    />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemText
-                      primary="Daily Calories"
-                      secondary={DailyCalories ? `${DailyCalories} cal` : "N/A"}
-                    />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemText
-                      primary="Total Calories Consumed"
-                      secondary={`${totalCaloriesConsumed} cal`}
-                    />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemText
-                      primary="Remaining Calories"
-                      secondary={`${
-                        remainingCalories >= 0 ? remainingCalories : 0
-                      } cal`}
-                    />
-                  </ListItem>
-                </List>
-              </CardContent>
-            </Card>
+            <motion.div
+              initial={{ opacity: 0, x: -20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.4 }}
+            >
+              <Card elevation={3} sx={{ borderRadius: 3 }}>
+                <CardContent>
+                  <Box display="flex" alignItems="center" mb={2}>
+                    <FitnessCenter color="primary" sx={{ mr: 1 }} />
+                    <Typography variant="h5" sx={{ fontWeight: "bold" }}>
+                      Health Metrics
+                    </Typography>
+                  </Box>
+
+                  <Divider sx={{ my: 2 }} />
+
+                  <Grid container spacing={2}>
+                    {[
+                      { label: "BMI", value: BMI },
+                      { label: "BFP", value: BFP },
+                      { label: "BMR", value: BMR },
+                      { label: "Weight To Height Ratio", value: WHtR }
+                    ].map((metric, index) => (
+                      <Grid item xs={6} key={metric.label}>
+                        <motion.div
+                          initial={{ opacity: 0, y: 20 }}
+                          animate={{ opacity: 1, y: 0 }}
+                          transition={{ delay: index * 0.1 }}
+                        >
+                          <Paper
+                            elevation={0}
+                            sx={{ p: 2, borderRadius: 2, bgcolor: "#E8F5E9" }}
+                          >
+                            <Typography variant="subtitle2">{metric.label}</Typography>
+                            <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+                              {metric.value || "N/A"}
+                            </Typography>
+                          </Paper>
+                        </motion.div>
+                      </Grid>
+                    ))}
+                  </Grid>
+
+                  <Divider sx={{ my: 3 }} />
+
+                  <Box sx={{ mb: 2 }}>
+                    <Typography
+                      variant="subtitle1"
+                      sx={{ fontWeight: "bold", mb: 1 }}
+                    >
+                      Daily Nutrition
+                    </Typography>
+                    <Box
+                      display="flex"
+                      justifyContent="space-between"
+                      alignItems="center"
+                      mb={1}
+                    >
+                      <Typography variant="body2">Goal:</Typography>
+                      <Chip
+                        label={`${DailyCalories || 0} cal`}
+                        color="primary"
+                        size="small"
+                      />
+                    </Box>
+                    <Box
+                      display="flex"
+                      justifyContent="space-between"
+                      alignItems="center"
+                      mb={1}
+                    >
+                      <Typography variant="body2">Consumed:</Typography>
+                      <Chip label={`${totalCaloriesConsumed} cal`} size="small" />
+                    </Box>
+                    <Box
+                      display="flex"
+                      justifyContent="space-between"
+                      alignItems="center"
+                    >
+                      <Typography variant="body2">Remaining:</Typography>
+                      <Chip
+                        label={`${
+                          remainingCalories >= 0 ? remainingCalories : 0
+                        } cal`}
+                        color={remainingCalories > 0 ? "primary" : "error"}
+                        size="small"
+                      />
+                    </Box>
+                  </Box>
+                </CardContent>
+              </Card>
+            </motion.div>
           </Grid>
 
-          {/* Food Recommendations Section */}
-          {/* <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent>
-                <Typography variant="h5" gutterBottom>
-                  Food Recommendations
-                </Typography>
-                {foods?.Breakfast?.length > 0 ? (
-                  <>
-                    <Typography variant="h6">Breakfast</Typography>
-                    <List>
-                      {foods.Breakfast.map((item, index) => (
-                        <ListItem key={index}>
-                          <ListItemText
-                            primary={item.Meal}
-                            secondary={`${item.Calories} cal (P: ${item.Protein}g, F: ${item.Fats}g, C: ${item.Carbs}g)`}
-                          />
-                          <Button
-                            variant="contained"
-                            color="primary"
-                            onClick={() => logMeal(item.Meal, item.Calories)}
-                          >
-                            Ate
-                          </Button>
-                        </ListItem>
-                      ))}
-                    </List>
-
-                    <Typography variant="h6">Lunch</Typography>
-                    <List>
-                      {foods.Lunch.map((item, index) => (
-                        <ListItem key={index}>
-                          <ListItemText
-                            primary={item.Meal}
-                            secondary={`${item.Calories} cal (P: ${item.Protein}g, F: ${item.Fats}g, C: ${item.Carbs}g)`}
-                          />
-                          <Button
-                            variant="contained"
-                            color="primary"
-                            onClick={() => logMeal(item.Meal, item.Calories)}
-                          >
-                            Ate
-                          </Button>
-                        </ListItem>
-                      ))}
-                    </List>
-
-                    <Typography variant="h6">Dinner</Typography>
-                    <List>
-                      {foods.Dinner.map((item, index) => (
-                        <ListItem key={index}>
-                          <ListItemText
-                            primary={item.Meal}
-                            secondary={`${item.Calories} cal (P: ${item.Protein}g, F: ${item.Fats}g, C: ${item.Carbs}g)`}
-                          />
-                          <Button
-                            variant="contained"
-                            color="primary"
-                            onClick={() => logMeal(item.Meal, item.Calories)}
-                          >
-                            Ate
-                          </Button>
-                        </ListItem>
-                      ))}
-                    </List>
-                  </>
-                ) : (
-                  <Typography>No recommendations available.</Typography>
-                )}
-              </CardContent>
-            </Card>
-          </Grid> */}
-
           {/* Logged Meals Section */}
-          <Grid item xs={12}>
-            <Card>
-              <CardContent>
-                <Typography variant="h5" gutterBottom>
-                  Logged Meals
-                </Typography>
-                <TextField
-                  type="date"
-                  value={selectedDate}
-                  onChange={(e) => setSelectedDate(e.target.value)}
-                  fullWidth
-                  margin="normal"
-                />
-                <List>
+          <Grid item xs={12} md={6}>
+            <motion.div
+              initial={{ opacity: 0, x: 20 }}
+              animate={{ opacity: 1, x: 0 }}
+              transition={{ duration: 0.4 }}
+            >
+              <Card elevation={3} sx={{ borderRadius: 3 }}>
+                <CardContent>
+                  <Typography
+                    variant="h5"
+                    gutterBottom
+                    sx={{ fontWeight: "bold" }}
+                  >
+                    Today's Meals
+                  </Typography>
+
+                  <TextField
+                    type="date"
+                    value={selectedDate}
+                    onChange={(e) => setSelectedDate(e.target.value)}
+                    fullWidth
+                    margin="normal"
+                    size="small"
+                    sx={{ mb: 2 }}
+                  />
+
                   {loggedMeals?.length > 0 ? (
-                    loggedMeals.map((meal, index) => (
-                      <ListItem key={index}>
-                        <ListItemText
-                          primary={meal?.food}
-                          secondary={`${meal?.calories} cal`}
-                        />
-                        <IconButton
-                          color="error"
-                          onClick={() => removeMeal(meal.food)}
+                    <List sx={{ maxHeight: 300, overflow: "auto" }}>
+                      {loggedMeals.map((meal, index) => (
+                        <motion.div
+                          key={index}
+                          initial={{ opacity: 0, x: -20 }}
+                          animate={{ opacity: 1, x: 0 }}
+                          transition={{ delay: index * 0.05 }}
                         >
-                          <DeleteIcon />
-                        </IconButton>
-                      </ListItem>
-                    ))
+                          <ListItem
+                            sx={{
+                              bgcolor: index % 2 === 0 ? "#FAFAFA" : "white",
+                              borderRadius: 1,
+                              mb: 1,
+                            }}
+                            secondaryAction={
+                              <IconButton
+                                edge="end"
+                                color="error"
+                                onClick={() => removeMeal(meal.food)}
+                                component={motion.div}
+                                whileHover={{ scale: 1.1 }}
+                                whileTap={{ scale: 0.9 }}
+                              >
+                                <DeleteIcon />
+                              </IconButton>
+                            }
+                          >
+                            <ListItemText
+                              primary={meal?.food}
+                              secondary={`${meal?.calories} calories`}
+                              primaryTypographyProps={{ fontWeight: "medium" }}
+                            />
+                          </ListItem>
+                        </motion.div>
+                      ))}
+                    </List>
                   ) : (
-                    <Typography>No meals logged yet.</Typography>
+                    <motion.div
+                      initial={{ opacity: 0 }}
+                      animate={{ opacity: 1 }}
+                      transition={{ duration: 0.5 }}
+                    >
+                      <Box textAlign="center" py={4}>
+                        <Typography color="textSecondary">
+                          No meals logged for this date
+                        </Typography>
+                      </Box>
+                    </motion.div>
                   )}
-                </List>
-              </CardContent>
-            </Card>
+                </CardContent>
+              </Card>
+            </motion.div>
           </Grid>
 
           {/* Macronutrient Chart Section */}
           <Grid item xs={12}>
-            {userData && <MacronutrientChart userId={userData._id} />}
+            <motion.div
+              initial={{ opacity: 0, y: 20 }}
+              animate={{ opacity: 1, y: 0 }}
+              transition={{ duration: 0.5 }}
+            >
+              <Card elevation={3} sx={{ borderRadius: 3 }}>
+                <CardContent>
+                  <Typography
+                    variant="h5"
+                    gutterBottom
+                    sx={{ fontWeight: "bold" }}
+                  >
+                    Nutrition Overview
+                  </Typography>
+                  {userData && <MacronutrientChart userId={userData._id} />}
+                </CardContent>
+              </Card>
+            </motion.div>
           </Grid>
         </Grid>
+      </Container>
 
-        <Snackbar
-          open={showGoalAchieved}
-          autoHideDuration={6000}
-          onClose={handleCloseGoalAchieved}
-          anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      <Snackbar
+        open={showGoalAchieved}
+        autoHideDuration={6000}
+        onClose={handleCloseGoalAchieved}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.8, opacity: 0 }}
         >
           <Alert
             onClose={handleCloseGoalAchieved}
             severity="success"
-            sx={{ width: "100%" }}
+            sx={{ 
+              width: "100%", 
+              fontWeight: "bold",
+              boxShadow: 3
+            }}
           >
-            Congratulations! You completed your today's calorie goal...🔥
+            🎉 Congratulations! You've reached your daily calorie goal!
           </Alert>
-        </Snackbar>
-      </Container>
-      {/* {userData && <Forum userId={userData._id} />} */}
-    </div>
+        </motion.div>
+      </Snackbar>
+    </Box>
   );
 };
 

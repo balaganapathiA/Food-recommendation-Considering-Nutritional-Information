@@ -1,27 +1,32 @@
 import React, { useState, useEffect } from "react";
 import { useNavigate, Link } from "react-router-dom";
-import MacronutrientChart from "../components/MacronutrientChart";
-import UserProfile from "../components/UserProfile";
-import Challenges from "../components/Challanges";
-import Forum from "../components/Forum";
+import { motion } from "framer-motion";
 import {
   AppBar,
   Toolbar,
   Typography,
   Button,
   Container,
-  List,
-  ListItem,
-  ListItemText,
-  TextField,
   Grid,
   Card,
   CardContent,
+  Chip,
+  Box,
   IconButton,
   Snackbar,
   Alert,
+  CircularProgress,
 } from "@mui/material";
-import { Delete as DeleteIcon } from "@mui/icons-material";
+import {
+  Restaurant,
+  Forum,
+  ExitToApp,
+  LocalFireDepartment,
+  FavoriteBorder,
+  Favorite,
+  CheckCircle,
+} from "@mui/icons-material";
+import Tooltip from "@mui/material/Tooltip";
 
 const Foodrecommendations = () => {
   const [userData, setUserData] = useState(null);
@@ -50,7 +55,6 @@ const Foodrecommendations = () => {
       return;
     }
 
-    // Fetch user data
     fetch("http://localhost:5001/api/dashboard", {
       method: "GET",
       headers: { Authorization: `Bearer ${token}` },
@@ -69,7 +73,6 @@ const Foodrecommendations = () => {
       });
   }, [navigate]);
 
-  // Fetch food recommendations and health data
   useEffect(() => {
     if (!userData) return;
 
@@ -92,7 +95,6 @@ const Foodrecommendations = () => {
           setDailyCalories(data.metrics?.DailyCalories);
           setWHtR(data.metrics?.WHtR);
           setCategory(data.metrics?.category);
-          // console.log("data=>"+data)
         }
         setLoading(false);
       })
@@ -101,8 +103,7 @@ const Foodrecommendations = () => {
         setLoading(false);
       });
   }, [userData]);
-  // console.log(foods)
-  // Fetch logged meals
+
   useEffect(() => {
     if (!userData?._id) return;
 
@@ -122,7 +123,6 @@ const Foodrecommendations = () => {
       .catch((err) => console.error("Error fetching logged meals:", err));
   }, [userData, DailyCalories]);
 
-  // Fetch meals for the selected date
   useEffect(() => {
     if (!userData?._id) return;
 
@@ -200,37 +200,174 @@ const Foodrecommendations = () => {
 
   if (loading) {
     return (
-      <Container>
-        <Typography variant="h6">Loading...</Typography>
+      <Container
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "100vh",
+          backgroundColor: "#f8faf7",
+        }}
+      >
+        <motion.div
+          animate={{
+            scale: [1, 1.2, 1],
+            rotate: [0, 10, -10, 0],
+          }}
+          transition={{
+            duration: 1.5,
+            repeat: Infinity,
+            ease: "easeInOut",
+          }}
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+          }}
+        >
+          <Restaurant
+            color="primary"
+            sx={{
+              fontSize: 80,
+              mb: 2,
+              color: "#2E7D32",
+            }}
+          />
+          <Typography
+            variant="h5"
+            sx={{
+              fontWeight: "bold",
+              color: "#2E7D32",
+              fontFamily: '"Poppins", sans-serif',
+              mb: 2,
+            }}
+          >
+            Preparing Your Meal Plan
+          </Typography>
+        </motion.div>
+
+        <motion.div
+          initial={{ width: 0 }}
+          animate={{ width: "60%" }}
+          transition={{
+            duration: 2,
+            repeat: Infinity,
+            repeatType: "reverse",
+          }}
+          style={{
+            height: 6,
+            backgroundColor: "#2E7D32",
+            borderRadius: 3,
+            marginTop: 20,
+          }}
+        />
       </Container>
     );
   }
 
   if (error) {
     return (
-      <Container>
-        <Typography color="error">{error}</Typography>
+      <Container
+        sx={{
+          display: "flex",
+          flexDirection: "column",
+          alignItems: "center",
+          justifyContent: "center",
+          height: "100vh",
+          backgroundColor: "#f8faf7",
+        }}
+      >
+        <motion.div
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ duration: 0.5 }}
+          style={{ textAlign: "center" }}
+        >
+          <Typography
+            variant="h5"
+            sx={{
+              fontWeight: "bold",
+              color: "#d32f2f",
+              mb: 2,
+              fontFamily: '"Poppins", sans-serif',
+            }}
+          >
+            Error Loading Recommendations
+          </Typography>
+          <Typography variant="body1" sx={{ mb: 3 }}>
+            {error}
+          </Typography>
+          <Button
+            variant="contained"
+            color="primary"
+            onClick={() => window.location.reload()}
+            sx={{ mr: 2 }}
+          >
+            Try Again
+          </Button>
+          <Button
+            variant="outlined"
+            color="primary"
+            onClick={() => navigate("/dashboard")}
+          >
+            Back to Dashboard
+          </Button>
+        </motion.div>
       </Container>
     );
   }
 
   return (
-    <div>
-      <AppBar position="static">
+    <Box
+      sx={{
+        display: "flex",
+        flexDirection: "column",
+        minHeight: "100vh",
+        backgroundColor: "#f8faf7",
+      }}
+    >
+      <AppBar position="static" sx={{ backgroundColor: "#2E7D32" }}>
         <Toolbar>
-          <Typography variant="h6" component="div" sx={{ flexGrow: 1 }}>
-            <Link
-              to="/dashboard"
-              style={{ textDecoration: "none", color: "inherit" }}
+          <Box
+            component={Link}
+            to="/dashboard"
+            sx={{
+              flexGrow: 1,
+              textDecoration: "none",
+              color: "inherit",
+            }}
+          >
+            <Typography
+              variant="h6"
+              component="div"
+              sx={{
+                fontWeight: "bold",
+                fontFamily: '"Poppins", sans-serif',
+                fontSize: "1.25rem",
+                "&:hover": {
+                  opacity: 0.8,
+                },
+              }}
             >
-              Dashboard
-            </Link>
-          </Typography>
-          <Button color="inherit" onClick={() => navigate("/recommendation")}>
-            Food_Recommendations
+              HealthTrack
+            </Typography>
+          </Box>
+          <Button
+            color="inherit"
+            startIcon={<Restaurant />}
+            onClick={() => navigate("/recommendation")}
+            sx={{ mr: 2 }}
+          >
+            Food
           </Button>
-          <Button color="inherit" onClick={() => navigate("/forum")}>
-            Forum
+          <Button
+            color="inherit"
+            startIcon={<Forum />}
+            onClick={() => navigate("/forum")}
+            sx={{ mr: 2 }}
+          >
+            Community
           </Button>
           <Button
             color="inherit"
@@ -244,192 +381,336 @@ const Foodrecommendations = () => {
         </Toolbar>
       </AppBar>
 
-      <Container>
-        {/* <Typography variant="h4" gutterBottom>
-          Welcome {userData?.name}
-        </Typography>
+      <Container
+        maxWidth="lg"
+        sx={{
+          py: 4,
+          flex: 1,
+          position: "relative",
+        }}
+      >
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          transition={{ duration: 0.5 }}
+        >
+          <Typography
+            variant="h4"
+            gutterBottom
+            sx={{
+              fontWeight: "bold",
+              color: "#2E7D32",
+              mb: 4,
+              fontFamily: '"Poppins", sans-serif',
+              textAlign: "center",
+            }}
+          >
+            Personalized Meal Recommendations
+          </Typography>
 
-        <Grid container spacing={3}>
-          { Health Metrics Section }
-          <Grid item xs={12} md={6}>
-            <Card>
-              <CardContent>
-                <Typography variant="h5" gutterBottom>
-                  Your Health Metrics
-                </Typography>
-                <List>
-                  <ListItem>
-                    <ListItemText primary="BMI" secondary={BMI || "N/A"} />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemText primary="BFP" secondary={BFP || "N/A"} />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemText primary="BMR" secondary={BMR || "N/A"} />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemText primary="WHtR" secondary={WHtR || "N/A"} />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemText primary="Category" secondary={category || "N/A"} />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemText 
-                      primary="Daily Calories" 
-                      secondary={DailyCalories ? `${DailyCalories} cal` : "N/A"} 
-                    />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemText 
-                      primary="Total Calories Consumed" 
-                      secondary={`${totalCaloriesConsumed} cal`} 
-                    />
-                  </ListItem>
-                  <ListItem>
-                    <ListItemText 
-                      primary="Remaining Calories" 
-                      secondary={`${remainingCalories >= 0 ? remainingCalories : 0} cal`} 
-                    />
-                  </ListItem>
-                </List>
+          <Box
+            sx={{
+              backgroundColor: "#e8f5e9",
+              borderRadius: 2,
+              p: 3,
+              mb: 4,
+              display: "flex",
+              justifyContent: "space-between",
+              alignItems: "center",
+              boxShadow: "0 2px 8px rgba(0,0,0,0.05)",
+            }}
+          >
+            <Box>
+              <Typography variant="subtitle2" color="text.secondary">
+                Daily Goal
+              </Typography>
+              <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+                {DailyCalories || 0} calories
+              </Typography>
+            </Box>
+
+            <Box sx={{ textAlign: "center" }}>
+              <Typography variant="subtitle2" color="text.secondary">
+                Consumed
+              </Typography>
+              <Typography variant="h6" sx={{ fontWeight: "bold" }}>
+                {totalCaloriesConsumed} calories
+              </Typography>
+            </Box>
+
+            <Box sx={{ textAlign: "right" }}>
+              <Typography variant="subtitle2" color="text.secondary">
+                Remaining
+              </Typography>
+              <Typography
+                variant="h6"
+                sx={{
+                  fontWeight: "bold",
+                  color: remainingCalories > 0 ? "#2E7D32" : "#d32f2f",
+                }}
+              >
+                {remainingCalories >= 0 ? remainingCalories : 0} calories
+              </Typography>
+            </Box>
+          </Box>
+
+          <motion.div
+            initial={{ y: 20, opacity: 0 }}
+            animate={{ y: 0, opacity: 1 }}
+            transition={{ duration: 0.4 }}
+          >
+            <Card
+              sx={{
+                borderRadius: 3,
+                border: "none",
+                boxShadow: "0 4px 20px rgba(0,0,0,0.08)",
+                overflow: "hidden",
+                mb: 4,
+              }}
+            >
+              <CardContent sx={{ p: 0 }}>
+                <Box
+                  sx={{
+                    backgroundColor: "#2E7D32",
+                    p: 3,
+                    color: "white",
+                  }}
+                >
+                  <Typography
+                    variant="h5"
+                    sx={{
+                      fontWeight: "bold",
+                      fontFamily: '"Poppins", sans-serif',
+                    }}
+                  >
+                    Today's Meal Plan
+                  </Typography>
+                  <Typography variant="body2">
+                    Based on your health profile and goals
+                  </Typography>
+                </Box>
+
+                {foods?.Breakfast?.length > 0 ? (
+                  <Box sx={{ p: 3 }}>
+                    {["Breakfast", "Lunch", "Dinner"].map((mealType) => (
+                      <Box key={mealType} mb={4}>
+                        <Box
+                          sx={{
+                            display: "flex",
+                            alignItems: "center",
+                            mb: 3,
+                            "&:before": {
+                              content: '""',
+                              display: "block",
+                              width: "4px",
+                              height: "24px",
+                              backgroundColor: "#2E7D32",
+                              mr: 2,
+                              borderRadius: "2px",
+                            },
+                          }}
+                        >
+                          <Typography
+                            variant="h6"
+                            sx={{
+                              fontWeight: "bold",
+                              color: "#2E7D32",
+                              fontFamily: '"Poppins", sans-serif',
+                            }}
+                          >
+                            {mealType}
+                          </Typography>
+                        </Box>
+
+                        <Grid container spacing={3} justifyContent="center">
+                          {foods[mealType].map((item, index) => (
+                            <Grid item xs={12} sm={6} md={4} key={index}>
+                              <motion.div
+                                whileHover={{ y: -5 }}
+                                transition={{ duration: 0.2 }}
+                              >
+                                <Card
+                                  sx={{
+                                    height: "100%",
+                                    borderRadius: 2,
+                                    border: "1px solid rgba(46, 125, 50, 0.2)",
+                                    transition: "all 0.3s ease",
+                                    "&:hover": {
+                                      boxShadow:
+                                        "0 6px 16px rgba(46, 125, 50, 0.15)",
+                                    },
+                                  }}
+                                >
+                                  <CardContent>
+                                    <Box
+                                      sx={{
+                                        display: "flex",
+                                        justifyContent: "space-between",
+                                        alignItems: "flex-start",
+                                        mb: 1,
+                                      }}
+                                    >
+                                      <Typography
+                                        variant="subtitle1"
+                                        sx={{
+                                          fontWeight: "bold",
+                                          color: "#2E7D32",
+                                        }}
+                                      >
+                                        {item.Meal}
+                                      </Typography>
+                                      <IconButton
+                                        size="small"
+                                        onClick={() =>
+                                          logMeal(item.Meal, item.Calories)
+                                        }
+                                        sx={{
+                                          color: "#2E7D32",
+                                          "&:hover": {
+                                            backgroundColor:
+                                              "rgba(46, 125, 50, 0.1)",
+                                          },
+                                        }}
+                                      >
+                                        <CheckCircle />
+                                      </IconButton>
+                                    </Box>
+
+                                    <Box
+                                      sx={{
+                                        display: "flex",
+                                        alignItems: "center",
+                                        mb: 2,
+                                      }}
+                                    >
+                                      <LocalFireDepartment
+                                        color="error"
+                                        fontSize="small"
+                                        sx={{ mr: 0.5 }}
+                                      />
+                                      <Typography
+                                        variant="body2"
+                                        color="text.secondary"
+                                      >
+                                        {item.Calories} calories
+                                      </Typography>
+                                    </Box>
+
+                                    <Box
+                                      sx={{
+                                        display: "flex",
+                                        justifyContent: "space-between",
+                                        mb: 2,
+                                        gap: 1,
+                                      }}
+                                    >
+                                      <Tooltip title="Protein">
+                                        <Chip
+                                          label={`${item.Protein}g`}
+                                          size="small"
+                                          color="primary"
+                                          variant="outlined"
+                                          sx={{ flex: 1 }}
+                                        />
+                                      </Tooltip>
+                                      <Tooltip title="Carbs">
+                                        <Chip
+                                          label={`${item.Carbs}g`}
+                                          size="small"
+                                          variant="outlined"
+                                          sx={{ flex: 1 }}
+                                        />
+                                      </Tooltip>
+                                      <Tooltip title="Fats">
+                                        <Chip
+                                          label={`${item.Fats}g`}
+                                          size="small"
+                                          variant="outlined"
+                                          sx={{ flex: 1 }}
+                                        />
+                                      </Tooltip>
+                                    </Box>
+
+                                    <Button
+                                      fullWidth
+                                      variant="contained"
+                                      color="primary"
+                                      sx={{
+                                        mt: 1,
+                                        borderRadius: 2,
+                                        textTransform: "none",
+                                        fontWeight: "bold",
+                                        py: 1,
+                                        fontSize: "0.875rem",
+                                      }}
+                                      onClick={() =>
+                                        logMeal(item.Meal, item.Calories)
+                                      }
+                                      startIcon={<FavoriteBorder />}
+                                    >
+                                      Log This Meal
+                                    </Button>
+                                  </CardContent>
+                                </Card>
+                              </motion.div>
+                            </Grid>
+                          ))}
+                        </Grid>
+                      </Box>
+                    ))}
+                  </Box>
+                ) : (
+                  <Box
+                    sx={{
+                      p: 6,
+                      textAlign: "center",
+                      backgroundColor: "#f5f5f5",
+                    }}
+                  >
+                    <Typography
+                      variant="h6"
+                      color="text.secondary"
+                      sx={{ mb: 2 }}
+                    >
+                      No recommendations available
+                    </Typography>
+                    <Typography variant="body2" color="text.secondary">
+                      We're working on personalized recommendations for you.
+                    </Typography>
+                  </Box>
+                )}
               </CardContent>
             </Card>
-          </Grid> */}
+          </motion.div>
+        </motion.div>
+      </Container>
 
-        {/* Food Recommendations Section */}
-        <Grid item xs={12} md={6}>
-          <Card>
-            <CardContent>
-              <Typography variant="h5" gutterBottom>
-                Food Recommendations
-              </Typography>
-              {foods?.Breakfast?.length > 0 ? (
-                <>
-                  <Typography variant="h6">Breakfast</Typography>
-                  <List>
-                    {foods.Breakfast.map((item, index) => (
-                      <ListItem key={index}>
-                        <ListItemText
-                          primary={item.Meal}
-                          secondary={`${item.Calories} cal (P: ${item.Protein}g, F: ${item.Fats}g, C: ${item.Carbs}g)`}
-                        />
-                        <Button
-                          variant="contained"
-                          color="primary"
-                          onClick={() => logMeal(item.Meal, item.Calories)}
-                        >
-                          Ate
-                        </Button>
-                      </ListItem>
-                    ))}
-                  </List>
-
-                  <Typography variant="h6">Lunch</Typography>
-                  <List>
-                    {foods.Lunch.map((item, index) => (
-                      <ListItem key={index}>
-                        <ListItemText
-                          primary={item.Meal}
-                          secondary={`${item.Calories} cal (P: ${item.Protein}g, F: ${item.Fats}g, C: ${item.Carbs}g)`}
-                        />
-                        <Button
-                          variant="contained"
-                          color="primary"
-                          onClick={() => logMeal(item.Meal, item.Calories)}
-                        >
-                          Ate
-                        </Button>
-                      </ListItem>
-                    ))}
-                  </List>
-
-                  <Typography variant="h6">Dinner</Typography>
-                  <List>
-                    {foods.Dinner.map((item, index) => (
-                      <ListItem key={index}>
-                        <ListItemText
-                          primary={item.Meal}
-                          secondary={`${item.Calories} cal (P: ${item.Protein}g, F: ${item.Fats}g, C: ${item.Carbs}g)`}
-                        />
-                        <Button
-                          variant="contained"
-                          color="primary"
-                          onClick={() => logMeal(item.Meal, item.Calories)}
-                        >
-                          Ate
-                        </Button>
-                      </ListItem>
-                    ))}
-                  </List>
-                </>
-              ) : (
-                <Typography>No recommendations available.</Typography>
-              )}
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Logged Meals Section */}
-        <Grid item xs={12}>
-          <Card>
-            <CardContent>
-              <Typography variant="h5" gutterBottom>
-                Logged Meals
-              </Typography>
-              <TextField
-                type="date"
-                value={selectedDate}
-                onChange={(e) => setSelectedDate(e.target.value)}
-                fullWidth
-                margin="normal"
-              />
-              <List>
-                {loggedMeals?.length > 0 ? (
-                  loggedMeals.map((meal, index) => (
-                    <ListItem key={index}>
-                      <ListItemText
-                        primary={meal?.food}
-                        secondary={`${meal?.calories} cal`}
-                      />
-                      <IconButton
-                        color="error"
-                        onClick={() => removeMeal(meal.food)}
-                      >
-                        <DeleteIcon />
-                      </IconButton>
-                    </ListItem>
-                  ))
-                ) : (
-                  <Typography>No meals logged yet.</Typography>
-                )}
-              </List>
-            </CardContent>
-          </Card>
-        </Grid>
-
-        {/* Macronutrient Chart Section */}
-        <Grid item xs={12}>
-          {userData && <MacronutrientChart userId={userData._id} />}
-        </Grid>
-
-        <Snackbar
-          open={showGoalAchieved}
-          autoHideDuration={6000}
-          onClose={handleCloseGoalAchieved}
-          anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      <Snackbar
+        open={showGoalAchieved}
+        autoHideDuration={6000}
+        onClose={handleCloseGoalAchieved}
+        anchorOrigin={{ vertical: "top", horizontal: "center" }}
+      >
+        <motion.div
+          initial={{ scale: 0.8, opacity: 0 }}
+          animate={{ scale: 1, opacity: 1 }}
+          exit={{ scale: 0.8, opacity: 0 }}
         >
           <Alert
             onClose={handleCloseGoalAchieved}
             severity="success"
-            sx={{ width: "100%" }}
+            sx={{
+              width: "100%",
+              fontWeight: "bold",
+              boxShadow: "0 2px 10px rgba(0,0,0,0.1)",
+            }}
+            icon={<Favorite color="inherit" />}
           >
-            Congratulations! You completed your today's calorie goal...🔥
+            Great job! You've reached your daily calorie goal!
           </Alert>
-        </Snackbar>
-      </Container>
-
-      {/* {userData && <Forum userId={userData._id} />} */}
-    </div>
+        </motion.div>
+      </Snackbar>
+    </Box>
   );
 };
 
